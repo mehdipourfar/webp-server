@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/valyala/fasthttp"
+	"log"
 )
 
 var config *Config
@@ -19,6 +20,7 @@ func RequestHandler(ctx *fasthttp.RequestCtx) {
 	}
 	convertedImage, err := Convert(params)
 	if err != nil {
+		log.Println(err)
 		ctx.Error("Internal Server Error", 500)
 	}
 	if params.Webp {

@@ -3,6 +3,7 @@ package main
 import (
 	bimg "gopkg.in/h2non/bimg.v1"
 
+	"bytes"
 	"path/filepath"
 )
 
@@ -21,10 +22,12 @@ func Convert(params *ImageParams) ([]byte, error) {
 	if !params.Crop {
 		options.Embed = true
 	}
-	if params.Webp {
-		options.Type = bimg.WEBP
-	} else {
-		options.Type = bimg.JPEG
+	if !bytes.HasPrefix(buffer, []byte("GIF")) {
+		if params.Webp {
+			options.Type = bimg.WEBP
+		} else {
+			options.Type = bimg.JPEG
+		}
 	}
 	newImage, err := bimg.NewImage(buffer).Process(options)
 	if err != nil {
