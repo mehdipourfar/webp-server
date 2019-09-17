@@ -18,11 +18,22 @@ func Convert(params *ImageParams) ([]byte, error) {
 	}
 	options := bimg.Options{
 		Quality: 95,
-		Width:   params.Width,
-		Height:  params.Height,
 		Crop:    params.Crop,
 	}
-	if !params.Crop {
+	img := bimg.NewImage(buffer)
+	if !params.Crop { // contain
+		size, err := img.Size()
+		if err != nil {
+			return nil, err
+		}
+		if size.Width > size.Height {
+			options.Width = params.Width
+		} else {
+			options.Height = params.Height
+		}
+	} else { // cover
+		options.Width = params.Width
+		options.Height = params.Height
 		options.Embed = true
 	}
 
@@ -32,7 +43,7 @@ func Convert(params *ImageParams) ([]byte, error) {
 		options.Type = bimg.JPEG
 	}
 
-	newImage, err := bimg.NewImage(buffer).Process(options)
+	newImage, err := img.Process(options)
 	if err != nil {
 		return nil, err
 	}
