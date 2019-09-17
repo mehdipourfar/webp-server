@@ -13,6 +13,9 @@ func Convert(params *ImageParams) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if bytes.HasPrefix(buffer, []byte("GIF")) {
+		return buffer, nil
+	}
 	options := bimg.Options{
 		Quality: 95,
 		Width:   params.Width,
@@ -22,13 +25,13 @@ func Convert(params *ImageParams) ([]byte, error) {
 	if !params.Crop {
 		options.Embed = true
 	}
-	if !bytes.HasPrefix(buffer, []byte("GIF")) {
-		if params.Webp {
-			options.Type = bimg.WEBP
-		} else {
-			options.Type = bimg.JPEG
-		}
+
+	if params.Webp {
+		options.Type = bimg.WEBP
+	} else {
+		options.Type = bimg.JPEG
 	}
+
 	newImage, err := bimg.NewImage(buffer).Process(options)
 	if err != nil {
 		return nil, err
