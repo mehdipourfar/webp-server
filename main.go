@@ -13,6 +13,10 @@ func init() {
 }
 
 func RequestHandler(ctx *fasthttp.RequestCtx) {
+	if string(ctx.Path()) == "/health/" {
+		ctx.SetStatusCode(200)
+		return
+	}
 	params, err := GetParamsFromUri(ctx.RequestURI())
 	if err != nil {
 		ctx.Error("Unsupported Path", 400)
