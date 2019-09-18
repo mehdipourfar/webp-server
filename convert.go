@@ -18,7 +18,7 @@ func Convert(params *ImageParams) ([]byte, error) {
 		return buffer, nil
 	}
 	options := bimg.Options{
-		Quality: 95,
+		Quality: config.IMAGE_QUALITY,
 		Crop:    params.Crop,
 	}
 	img := bimg.NewImage(buffer)
