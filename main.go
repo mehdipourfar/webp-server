@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/valyala/fasthttp"
+	bimg "gopkg.in/h2non/bimg.v1"
 	"log"
 )
 
@@ -22,15 +24,23 @@ func RequestHandler(ctx *fasthttp.RequestCtx) {
 		ctx.Error("Unsupported Path", 400)
 		return
 	}
-	convertedImage, err := Convert(params)
+	accept := ctx.Request.Header.Peek("accept")
+	params.WebpAccepted = bytes.Contains(accept, []byte("webp"))
+
+	convertedImage, imageType, err := Convert(params)
 	if err != nil {
 		log.Println(err)
 		ctx.Error("Internal Server Error", 500)
 	}
-	if params.Webp {
-		ctx.SetContentType("image/webp")
-	} else {
+	switch imageType {
+	case bimg.JPEG:
 		ctx.SetContentType("image/jpeg")
+	case bimg.PNG:
+		ctx.SetContentType("image/png")
+	case bimg.WEBP:
+		ctx.SetContentType("image/webp")
+	case bimg.GIF:
+		ctx.SetContentType("image/gif")
 	}
 	ctx.SetBody(convertedImage)
 }

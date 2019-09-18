@@ -7,9 +7,9 @@ import (
 )
 
 type Config struct {
-	IMAGES_ROOT   string `env:"IMAGES_ROOT,required"`
-	IMAGE_QUALITY int    `env:"IMAGE_QUALITY" envDefault:"95"`
-	SERVER_PORT   int    `env:"SERVER_PORT" envDefault:"8080"`
+	IMAGES_ROOT           string `env:"IMAGES_ROOT,required"`
+	DEFAULT_IMAGE_QUALITY int    `env:"IMAGE_QUALITY" envDefault:"95"`
+	SERVER_PORT           int    `env:"SERVER_PORT" envDefault:"8080"`
 }
 
 func GetConfig() *Config {
