@@ -3,9 +3,9 @@ Description=gunicorn daemon
 After=network.target
 
 [Service]
-User=root
-Group=root
-EnvironmentFile="/etc/default/imageserver"
+User=www-data
+Group=www-data
+EnvironmentFile=/etc/default/imageserver
 PIDFile=/run/imageserver/imageserver.pid
 KillMode=process
 ExecReload=/bin/kill -s HUP $MAINPID
