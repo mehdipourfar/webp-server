@@ -1,0 +1,23 @@
+[Unit]
+Description=gunicorn daemon
+After=network.target
+
+[Service]
+User=root
+Group=root
+EnvironmentFile="/etc/default/imageserver"
+PIDFile=/run/imageserver/imageserver.pid
+KillMode=process
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+PermissionsStartOnly=true
+PrivateTmp=true
+Type=simple
+Restart=always
+
+ExecStart=/usr/bin/imageserver
+ExecStartPre=-/bin/mkdir -p /run/imageserver/
+ExecStartPre=/bin/chown -R www-data:www-data /run/imageserver/
+
+[Install]
+WantedBy=multi-user.target

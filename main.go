@@ -3,9 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
+
 	"github.com/valyala/fasthttp"
 	bimg "gopkg.in/h2non/bimg.v1"
-	"log"
 )
 
 var config *Config
@@ -46,6 +47,6 @@ func RequestHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func main() {
-	fasthttp.ListenAndServe(fmt.Sprintf(":%d", config.SERVER_PORT), RequestHandler)
+	fasthttp.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", config.SERVER_PORT), RequestHandler)
 
 }
