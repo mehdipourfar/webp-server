@@ -6,6 +6,11 @@ import (
 	"path/filepath"
 )
 
+func init() {
+	bimg.VipsCacheSetMax(0)
+	bimg.VipsCacheSetMaxMem(0)
+}
+
 func Convert(params *ImageParams) ([]byte, bimg.ImageType, error) {
 	input := filepath.Join(config.IMAGES_ROOT, params.FilePath)
 	buffer, err := bimg.Read(input)
