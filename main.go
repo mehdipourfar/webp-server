@@ -15,10 +15,8 @@ func init() {
 }
 
 func main() {
-	handler := &Handler{}
-	var err error
-	if handler.sid, err = shortid.New(1, shortid.DefaultABC, 2342); err != nil {
-		log.Fatalf("Failed createing shortid seed: %v", err)
+	handler := &Handler{
+		sid: shortid.MustNew(1, shortid.DefaultABC, 535342),
 	}
 	addr := fmt.Sprintf("127.0.0.1:%d", config.SERVER_PORT)
 	log.Printf("Starting server on %s", addr)

@@ -59,11 +59,14 @@ func handleGet(ctx *fasthttp.RequestCtx) {
 }
 
 func handleUpload(ctx *fasthttp.RequestCtx, handler *Handler) {
-	imageId, err := handler.sid.Generate()
-	if err != nil {
-		ctx.Error("Internal Server Error", 500)
+	if len(config.TOKEN) != 0 && config.TOKEN != string(ctx.Request.Header.Peek("Token")) {
+		ctx.SetContentType("application/json")
+		ctx.SetBody([]byte(`{"error": "Invalid Token"}`))
+		ctx.SetStatusCode(401)
 		return
 	}
+
+	imageId := handler.sid.MustGenerate()
 
 	ctx.SetContentType("application/json")
 	header, err := ctx.FormFile("image_file")

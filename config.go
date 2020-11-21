@@ -11,6 +11,7 @@ type Config struct {
 	DATA_DIR              string `env:"DATA_DIR,required"`
 	DEFAULT_IMAGE_QUALITY int    `env:"IMAGE_QUALITY" envDefault:"95"`
 	SERVER_PORT           int    `env:"SERVER_PORT" envDefault:"8080"`
+	TOKEN                 string `env:"TOKEN" envDefault=""`
 }
 
 func GetConfig() *Config {
