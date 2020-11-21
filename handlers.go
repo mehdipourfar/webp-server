@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/teris-io/shortid"
@@ -41,6 +42,7 @@ func handleGet(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		log.Println(err)
 		ctx.Error("Internal Server Error", 500)
+		return
 	}
 	switch imageType {
 	case bimg.JPEG:
@@ -76,7 +78,16 @@ func handleUpload(ctx *fasthttp.RequestCtx, handler *Handler) {
 		return
 	}
 
-	filePath := fmt.Sprintf("%s/%s", config.IMAGES_ROOT, imageId)
-	fasthttp.SaveMultipartFile(header, filePath)
+	parentDir, filePath := ImageIdToFilePath(imageId)
+	if err := os.MkdirAll(parentDir, 0755); err != nil {
+		log.Println(err)
+		ctx.Error("Internal Server Error", 500)
+		return
+	}
+	if err := fasthttp.SaveMultipartFile(header, filePath); err != nil {
+		log.Println(err)
+		ctx.Error("Internal Server Error", 500)
+		return
+	}
 	ctx.SetBody([]byte(fmt.Sprintf(`{"image_id": "%s"}`, imageId)))
 }

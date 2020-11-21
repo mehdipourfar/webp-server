@@ -2,8 +2,6 @@ package main
 
 import (
 	bimg "gopkg.in/h2non/bimg.v1"
-
-	"path/filepath"
 )
 
 func init() {
@@ -12,8 +10,7 @@ func init() {
 }
 
 func Convert(params *ImageParams) ([]byte, bimg.ImageType, error) {
-	input := filepath.Join(config.IMAGES_ROOT, params.FilePath)
-	buffer, err := bimg.Read(input)
+	buffer, err := bimg.Read(params.FilePath)
 	if err != nil {
 		return nil, bimg.UNKNOWN, err
 	}

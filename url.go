@@ -40,8 +40,9 @@ func GetParamsFromUri(reqUri []byte) (*ImageParams, error) {
 	if len(match) != 3 {
 		return nil, errors.New("Not Match")
 	}
+	_, filePath := ImageIdToFilePath(string(match[2]))
 	params := &ImageParams{
-		FilePath: string(match[2]),
+		FilePath: filePath,
 		Fit:      FIT_CONTAIN,
 		Format:   FORMAT_AUTO,
 		Quality:  config.DEFAULT_IMAGE_QUALITY,
@@ -84,4 +85,10 @@ func GetParamsFromUri(reqUri []byte) (*ImageParams, error) {
 		}
 	}
 	return params, nil
+}
+
+func ImageIdToFilePath(imageId string) (parentDir string, filePath string) {
+	parentDir = fmt.Sprintf("%s/%s/%s", config.DATA_DIR, imageId[1:2], imageId[3:5])
+	filePath = fmt.Sprintf("%s/%s", parentDir, imageId)
+	return
 }
