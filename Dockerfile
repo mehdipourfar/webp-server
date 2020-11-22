@@ -7,11 +7,9 @@ RUN apk add vips-dev fftw-dev build-base --no-cache \
         --repository https://dl-3.alpinelinux.org/alpine/edge/testing/ \
         --repository https://dl-3.alpinelinux.org/alpine/edge/main
 
-WORKDIR /root/go/src/imageserver
+WORKDIR /root/xerox
 COPY . .
-RUN go version
-RUN ls
 RUN GPATH=/root/go GOOS=linux GOARCH=amd64 go install
 
 RUN apk del .build-deps
-CMD ["/root/go/bin/imageserver"]
+CMD ["/root/go/bin/xerox"]

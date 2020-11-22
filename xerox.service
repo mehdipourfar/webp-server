@@ -1,12 +1,12 @@
 [Unit]
-Description=gunicorn daemon
+Description=xerox daemon
 After=network.target
 
 [Service]
 User=www-data
 Group=www-data
-EnvironmentFile=/etc/default/imageserver
-PIDFile=/run/imageserver/imageserver.pid
+EnvironmentFile=/etc/default/xerox
+PIDFile=/run/xerox/xerox.pid
 KillMode=process
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s TERM $MAINPID
@@ -15,9 +15,9 @@ PrivateTmp=true
 Type=simple
 Restart=always
 
-ExecStart=/usr/bin/imageserver
-ExecStartPre=-/bin/mkdir -p /run/imageserver/
-ExecStartPre=/bin/chown -R www-data:www-data /run/imageserver/
+ExecStart=/usr/bin/xerox
+ExecStartPre=-/bin/mkdir -p /run/xerox/
+ExecStartPre=/bin/chown -R www-data:www-data /run/xerox/
 
 [Install]
 WantedBy=multi-user.target

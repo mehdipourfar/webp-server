@@ -1,4 +1,4 @@
-module github.com/mehdipourfar/imageserver
+module github.com/mehdipourfar/xerox
 
 go 1.15
 
