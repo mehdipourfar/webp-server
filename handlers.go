@@ -32,6 +32,7 @@ func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
 func handleGet(ctx *fasthttp.RequestCtx) {
 	params, err := GetParamsFromUri(ctx.RequestURI())
 	if err != nil {
+		log.Println(err)
 		ctx.Error("Unsupported Path", 400)
 		return
 	}
@@ -40,6 +41,11 @@ func handleGet(ctx *fasthttp.RequestCtx) {
 
 	convertedImage, imageType, err := Convert(params)
 	if err != nil {
+		if os.IsNotExist(err) {
+			ctx.SetStatusCode(404)
+			ctx.SetBody([]byte("Not Found"))
+			return
+		}
 		log.Println(err)
 		ctx.Error("Internal Server Error", 500)
 		return

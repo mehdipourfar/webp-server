@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,7 +12,7 @@ import (
 var re *regexp.Regexp
 
 func init() {
-	re = regexp.MustCompile("/image/(?P<FilterParams>[0-9a-z,=-]+)/(?P<FilePath>.+)")
+	re = regexp.MustCompile("/image/(?P<filterParams>[0-9a-z,=-]+)/(?P<imageId>[0-9a-zA-Z_-]+)")
 }
 
 const (
@@ -26,7 +27,7 @@ const (
 )
 
 type ImageParams struct {
-	FilePath     string
+	ImageId      string
 	Width        int
 	Height       int
 	Format       string
@@ -40,12 +41,13 @@ func GetParamsFromUri(reqUri []byte) (*ImageParams, error) {
 	if len(match) != 3 {
 		return nil, errors.New("Not Match")
 	}
-	_, filePath := ImageIdToFilePath(string(match[2]))
+	imageId := string(match[2])
+
 	params := &ImageParams{
-		FilePath: filePath,
-		Fit:      FIT_CONTAIN,
-		Format:   FORMAT_AUTO,
-		Quality:  config.DEFAULT_IMAGE_QUALITY,
+		ImageId: imageId,
+		Fit:     FIT_CONTAIN,
+		Format:  FORMAT_AUTO,
+		Quality: config.DEFAULT_IMAGE_QUALITY,
 	}
 
 	var err error
@@ -88,7 +90,8 @@ func GetParamsFromUri(reqUri []byte) (*ImageParams, error) {
 }
 
 func ImageIdToFilePath(imageId string) (parentDir string, filePath string) {
-	parentDir = fmt.Sprintf("%s/%s/%s", config.DATA_DIR, imageId[1:2], imageId[3:5])
+	parentDir = fmt.Sprintf("images/%s/%s", imageId[1:2], imageId[3:5])
+	parentDir = filepath.Join(config.DATA_DIR, parentDir)
 	filePath = fmt.Sprintf("%s/%s", parentDir, imageId)
 	return
 }

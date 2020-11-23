@@ -10,7 +10,8 @@ func init() {
 }
 
 func Convert(params *ImageParams) ([]byte, bimg.ImageType, error) {
-	buffer, err := bimg.Read(params.FilePath)
+	_, filePath := ImageIdToFilePath(params.ImageId)
+	buffer, err := bimg.Read(filePath)
 	if err != nil {
 		return nil, bimg.UNKNOWN, err
 	}
