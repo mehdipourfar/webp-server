@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -39,6 +40,13 @@ func handleGet(ctx *fasthttp.RequestCtx) {
 	accept := ctx.Request.Header.Peek("accept")
 	params.WebpAccepted = bytes.Contains(accept, []byte("webp"))
 
+	cachedParentDir, cachedFilePath := params.GetCachePath()
+	if _, err := os.Stat(cachedFilePath); err == nil {
+		// cachedFile exists
+		fasthttp.ServeFileUncompressed(ctx, cachedFilePath)
+		return
+	}
+
 	convertedImage, imageType, err := Convert(params)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -50,6 +58,17 @@ func handleGet(ctx *fasthttp.RequestCtx) {
 		ctx.Error("Internal Server Error", 500)
 		return
 	}
+
+	if err := os.MkdirAll(cachedParentDir, 0755); err != nil {
+		log.Println(err)
+		ctx.Error("Internal Server Error", 500)
+		return
+	}
+	if err := ioutil.WriteFile(cachedFilePath, convertedImage, 0604); err != nil {
+		log.Println(err)
+		ctx.Error("Internal Server Error", 500)
+	}
+
 	switch imageType {
 	case bimg.JPEG:
 		ctx.SetContentType("image/jpeg")

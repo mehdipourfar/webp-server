@@ -1,8 +1,11 @@
 package main
 
 import (
+	"crypto/md5"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -41,6 +44,7 @@ func GetParamsFromUri(reqUri []byte) (*ImageParams, error) {
 	if len(match) != 3 {
 		return nil, errors.New("Not Match")
 	}
+
 	imageId := string(match[2])
 
 	params := &ImageParams{
@@ -71,21 +75,24 @@ func GetParamsFromUri(reqUri []byte) (*ImageParams, error) {
 				return nil, fmt.Errorf("Quality should be integer")
 			}
 		case "fit":
-			if fit := keyVal[1]; fit == FIT_COVER || fit == FIT_CONTAIN {
+			if fit := keyVal[1]; fit == FIT_COVER || fit == FIT_CONTAIN || fit == FIT_SCALE_DOWN {
 				params.Fit = fit
 			} else {
-				return nil, fmt.Errorf("Supported fits are cover and contain")
+				return nil, fmt.Errorf("Supported fits are cover, contain and scale-down")
 			}
 		case "format", "f":
-			if format := keyVal[1]; format == FORMAT_WEBP || format == FORMAT_JPEG || format == FORMAT_PNG {
+			if format := keyVal[1]; format == FORMAT_WEBP || format == FORMAT_JPEG || format == FORMAT_PNG || format == FORMAT_AUTO {
 				params.Format = format
 			} else {
-				return nil, fmt.Errorf("Supported fits are cover and contain")
+				return nil, fmt.Errorf("Supported formats are auto, webp, jpeg and png")
 			}
 		default:
 			return nil, fmt.Errorf("Invalid filter key: %s", keyVal[0])
 		}
 	}
+
+	_, filePath := params.GetCachePath()
+	log.Println(filePath)
 	return params, nil
 }
 
@@ -93,5 +100,30 @@ func ImageIdToFilePath(imageId string) (parentDir string, filePath string) {
 	parentDir = fmt.Sprintf("images/%s/%s", imageId[1:2], imageId[3:5])
 	parentDir = filepath.Join(config.DATA_DIR, parentDir)
 	filePath = fmt.Sprintf("%s/%s", parentDir, imageId)
+	return
+}
+
+func (i *ImageParams) GetCacheKey() string {
+	key := fmt.Sprintf(
+		"%s:%s:%s:%s:%s:%s:%S",
+		i.ImageId,
+		i.Width,
+		i.Height,
+		i.Format,
+		i.Fit,
+		i.Quality,
+		i.WebpAccepted,
+	)
+	h := md5.New()
+	io.WriteString(h, key)
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (i *ImageParams) GetCachePath() (parentDir string, filePath string) {
+	fileName := i.GetCacheKey()
+
+	parentDir = fmt.Sprintf("caches/%s/%s", fileName[31:32], fileName[29:31])
+	parentDir = filepath.Join(config.DATA_DIR, parentDir)
+	filePath = fmt.Sprintf("%s/%s", parentDir, fileName)
 	return
 }
