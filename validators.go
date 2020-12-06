@@ -9,6 +9,7 @@ import (
 
 func ValidateImage(header *multipart.FileHeader) bool {
 	file, err := header.Open()
+	defer file.Close()
 	if err != nil {
 		log.Println(err)
 		return false

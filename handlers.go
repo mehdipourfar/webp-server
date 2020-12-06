@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,7 +13,7 @@ import (
 )
 
 type Handler struct {
-	sid *shortid.Shortid
+	Config *Config
 }
 
 func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
@@ -22,25 +21,22 @@ func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
 	if path == "/health/" && ctx.IsGet() {
 		ctx.SetStatusCode(200)
 	} else if path == "/upload/" && ctx.IsPost() {
-		handleUpload(ctx, handler)
+		handler.handleUpload(ctx)
 	} else if strings.HasPrefix(path, "/image/") && ctx.IsGet() {
-		handleGet(ctx)
+		handler.handleGet(ctx)
 	} else {
 		ctx.Error("Not Found", 404)
 	}
 }
 
-func handleGet(ctx *fasthttp.RequestCtx) {
-	params, err := GetParamsFromUri(ctx.RequestURI())
+func (handler *Handler) handleGet(ctx *fasthttp.RequestCtx) {
+	params, err := GetImageParamsFromRequest(&ctx.Request.Header, handler.Config)
 	if err != nil {
 		log.Println(err)
 		ctx.Error("Unsupported Path", 400)
 		return
 	}
-	accept := ctx.Request.Header.Peek("accept")
-	params.WebpAccepted = bytes.Contains(accept, []byte("webp"))
-
-	cachedParentDir, cachedFilePath := params.GetCachePath()
+	cachedParentDir, cachedFilePath := params.GetCachePath(handler.Config.DATA_DIR)
 	if _, err := os.Stat(cachedFilePath); err == nil {
 		// cachedFile exists
 		fasthttp.ServeFileUncompressed(ctx, cachedFilePath)
@@ -83,15 +79,16 @@ func handleGet(ctx *fasthttp.RequestCtx) {
 
 }
 
-func handleUpload(ctx *fasthttp.RequestCtx, handler *Handler) {
-	if len(config.TOKEN) != 0 && config.TOKEN != string(ctx.Request.Header.Peek("Token")) {
+func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
+	if len(handler.Config.TOKEN) != 0 &&
+		handler.Config.TOKEN != string(ctx.Request.Header.Peek("Token")) {
 		ctx.SetContentType("application/json")
 		ctx.SetBody([]byte(`{"error": "Invalid Token"}`))
 		ctx.SetStatusCode(401)
 		return
 	}
 
-	imageId := handler.sid.MustGenerate()
+	imageId := shortid.GetDefault().MustGenerate()
 
 	ctx.SetContentType("application/json")
 	header, err := ctx.FormFile("image_file")
@@ -106,7 +103,7 @@ func handleUpload(ctx *fasthttp.RequestCtx, handler *Handler) {
 		return
 	}
 
-	parentDir, filePath := ImageIdToFilePath(imageId)
+	parentDir, filePath := ImageIdToFilePath(handler.Config.DATA_DIR, imageId)
 	if err := os.MkdirAll(parentDir, 0755); err != nil {
 		log.Println(err)
 		ctx.Error("Internal Server Error", 500)
