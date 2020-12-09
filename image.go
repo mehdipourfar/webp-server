@@ -25,15 +25,15 @@ const (
 	FIT_CONTAIN    = "contain"
 	FIT_SCALE_DOWN = "scale-down"
 
-	FORMAT_AUTO = "auto"
-	FORMAT_JPEG = "jpeg"
-	FORMAT_PNG  = "png"
-	FORMAT_WEBP = "webp"
+	FORMAT_AUTO     = "auto"
+	FORMAT_ORIGINAL = "original"
+	FORMAT_JPEG     = "jpeg"
+	FORMAT_PNG      = "png"
+	FORMAT_WEBP     = "webp"
 )
 
 type ImageParams struct {
 	ImageId      string
-	FilePath     string
 	Width        int
 	Height       int
 	Format       string
@@ -49,11 +49,9 @@ func GetImageParamsFromRequest(header *fasthttp.RequestHeader, config *Config) (
 	}
 
 	imageId := string(match[2])
-	_, filePath := ImageIdToFilePath(config.DATA_DIR, imageId)
 
 	params := &ImageParams{
 		ImageId:      imageId,
-		FilePath:     filePath,
 		Fit:          FIT_CONTAIN,
 		Format:       FORMAT_AUTO,
 		Quality:      config.DEFAULT_IMAGE_QUALITY,
@@ -87,10 +85,11 @@ func GetImageParamsFromRequest(header *fasthttp.RequestHeader, config *Config) (
 				return nil, fmt.Errorf("Supported fits are cover, contain and scale-down")
 			}
 		case "format", "f":
-			if format := keyVal[1]; format == FORMAT_WEBP || format == FORMAT_JPEG || format == FORMAT_PNG || format == FORMAT_AUTO {
-				params.Format = format
+			f := keyVal[1]
+			if f == FORMAT_WEBP || f == FORMAT_JPEG || f == FORMAT_PNG || f == FORMAT_AUTO || f == FORMAT_ORIGINAL {
+				params.Format = f
 			} else {
-				return nil, fmt.Errorf("Supported formats are auto, webp, jpeg and png")
+				return nil, fmt.Errorf("Supported formats are auto, original, webp, jpeg and png")
 			}
 		default:
 			return nil, fmt.Errorf("Invalid filter key: %s", keyVal[0])
@@ -132,35 +131,30 @@ func (i *ImageParams) GetCachePath(dataDir string) (parentDir string, filePath s
 	return
 }
 
-func Convert(params *ImageParams) ([]byte, bimg.ImageType, error) {
-	buffer, err := bimg.Read(params.FilePath)
-	if err != nil {
-		return nil, bimg.UNKNOWN, err
-	}
-	imageType := bimg.DetermineImageType(buffer)
-
-	if imageType == bimg.GIF {
-		// ignore gif conversion
-		return buffer, bimg.GIF, nil
-	}
-
-	options := bimg.Options{
+func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize, imageType bimg.ImageType) *bimg.Options {
+	options := &bimg.Options{
 		Quality: params.Quality,
 	}
 
 	if params.Fit == FIT_COVER {
 		options.Crop = true
+		options.Embed = true
+		options.Width = params.Width
+		options.Height = params.Height
 	}
-	img := bimg.NewImage(buffer)
 	if params.Fit == FIT_CONTAIN || params.Fit == FIT_SCALE_DOWN {
-		size, err := img.Size()
-		if err != nil {
-			return nil, imageType, err
-		}
-		if size.Width > size.Height {
+		if params.Width == 0 || params.Height == 0 {
 			options.Width = params.Width
-		} else {
 			options.Height = params.Height
+		} else {
+			imageRatio := float32(size.Width) / float32(size.Height)
+			wantedRatio := float32(params.Width) / float32(params.Height)
+
+			if wantedRatio < imageRatio {
+				options.Width = params.Width
+			} else {
+				options.Height = params.Height
+			}
 		}
 
 		if params.Fit == FIT_SCALE_DOWN {
@@ -171,10 +165,6 @@ func Convert(params *ImageParams) ([]byte, bimg.ImageType, error) {
 				options.Height = size.Height
 			}
 		}
-	} else {
-		options.Width = params.Width
-		options.Height = params.Height
-		options.Embed = true
 	}
 
 	switch params.Format {
@@ -182,8 +172,10 @@ func Convert(params *ImageParams) ([]byte, bimg.ImageType, error) {
 		if params.WebpAccepted {
 			options.Type = bimg.WEBP
 		} else {
-			options.Type = imageType
+			options.Type = bimg.JPEG
 		}
+	case FORMAT_ORIGINAL:
+		options.Type = imageType
 	case FORMAT_JPEG:
 		options.Type = bimg.JPEG
 	case FORMAT_WEBP:
@@ -191,8 +183,24 @@ func Convert(params *ImageParams) ([]byte, bimg.ImageType, error) {
 	case FORMAT_PNG:
 		options.Type = bimg.PNG
 	}
+	return options
+}
 
-	newImage, err := img.Process(options)
+func Convert(fileBuffer []byte, params *ImageParams) ([]byte, bimg.ImageType, error) {
+	imageType := bimg.DetermineImageType(fileBuffer)
+
+	if imageType == bimg.GIF {
+		// ignore gif conversion
+		return fileBuffer, bimg.GIF, nil
+	}
+	img := bimg.NewImage(fileBuffer)
+	size, err := img.Size()
+	if err != nil {
+		return nil, imageType, err
+	}
+
+	options := params.ToBimgOptions(&size, imageType)
+	newImage, err := img.Process(*options)
 	if err != nil {
 		return nil, options.Type, err
 	}

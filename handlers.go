@@ -37,13 +37,24 @@ func (handler *Handler) handleGet(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	cachedParentDir, cachedFilePath := params.GetCachePath(handler.Config.DATA_DIR)
-	if _, err := os.Stat(cachedFilePath); err == nil {
+	if _, err := os.Stat(cachedFilePath); err == nil && false {
 		// cachedFile exists
 		fasthttp.ServeFileUncompressed(ctx, cachedFilePath)
 		return
 	}
 
-	convertedImage, imageType, err := Convert(params)
+	_, imageFilePath := ImageIdToFilePath(handler.Config.DATA_DIR, params.ImageId)
+
+	imgBuffer, err := bimg.Read(imageFilePath)
+
+	if err != nil {
+		log.Println(err)
+		ctx.Error("Internal Server Error", 500)
+		return
+	}
+
+	convertedImage, imageType, err := Convert(imgBuffer, params)
+
 	if err != nil {
 		if os.IsNotExist(err) {
 			ctx.SetStatusCode(404)

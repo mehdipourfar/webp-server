@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/valyala/fasthttp"
+	bimg "gopkg.in/h2non/bimg.v1"
 	"testing"
 )
 
@@ -24,6 +25,17 @@ func (p *ImageParams) String() string {
 		"id:%s,width:%d,height:%d,format:%s,fit:%s,quality:%d,webp_accepted:%t",
 		p.ImageId, p.Width, p.Height, p.Format, p.Fit, p.Quality, p.WebpAccepted,
 	)
+}
+
+func bimgOptsToString(o *bimg.Options) string {
+	return fmt.Sprintf(
+		"type:%d,width:%d,height:%d,crop:%t,embed:%t",
+		o.Type, o.Width, o.Height, o.Crop, o.Embed,
+	)
+}
+func bimgOptsAreEqual(o1 *bimg.Options, o2 *bimg.Options) bool {
+	return o1.Type == o2.Type && o1.Width == o2.Width &&
+		o1.Height == o2.Height && o1.Crop == o2.Crop && o1.Embed == o2.Embed
 }
 
 func TestImagePath(t *testing.T) {
@@ -204,4 +216,254 @@ func TestGetParamsFromUri(t *testing.T) {
 
 	}
 
+}
+
+func TestGetParamsToBimgOptions(t *testing.T) {
+	tt := []struct {
+		name        string
+		imageParams *ImageParams
+		imageSize   *bimg.ImageSize
+		imageType   bimg.ImageType
+		options     *bimg.Options
+	}{
+		{
+			name: "webp_accepted_false",
+			imageParams: &ImageParams{
+				Width:        300,
+				Height:       300,
+				Format:       "auto",
+				Fit:          "cover",
+				Quality:      80,
+				WebpAccepted: false,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  900,
+				Height: 800,
+			},
+			imageType: bimg.PNG,
+			options: &bimg.Options{
+				Width:  300,
+				Height: 300,
+				Type:   bimg.JPEG,
+				Crop:   true,
+				Embed:  true,
+			},
+		},
+		{
+			name: "original_image",
+			imageParams: &ImageParams{
+				Width:        300,
+				Height:       300,
+				Format:       "original",
+				Fit:          "cover",
+				Quality:      80,
+				WebpAccepted: false,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  900,
+				Height: 800,
+			},
+			imageType: bimg.PNG,
+			options: &bimg.Options{
+				Width:  300,
+				Height: 300,
+				Type:   bimg.PNG,
+				Crop:   true,
+				Embed:  true,
+			},
+		},
+
+		{
+			name: "webp_accepted_true",
+			imageParams: &ImageParams{
+				Width:        300,
+				Height:       300,
+				Format:       "auto",
+				Fit:          "cover",
+				Quality:      80,
+				WebpAccepted: true,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  900,
+				Height: 800,
+			},
+			imageType: bimg.PNG,
+			options: &bimg.Options{
+				Width:  300,
+				Height: 300,
+				Type:   bimg.WEBP,
+				Crop:   true,
+				Embed:  true,
+			},
+		},
+		{
+			name: "cover_landscape",
+			imageParams: &ImageParams{
+				Width:        300,
+				Height:       300,
+				Format:       "auto",
+				Fit:          "cover",
+				Quality:      80,
+				WebpAccepted: true,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  900,
+				Height: 400,
+			},
+			imageType: bimg.PNG,
+			options: &bimg.Options{
+				Width:  300,
+				Height: 300,
+				Type:   bimg.WEBP,
+				Crop:   true,
+				Embed:  true,
+			},
+		},
+		{
+			name: "cover_portait",
+			imageParams: &ImageParams{
+				Width:        300,
+				Height:       300,
+				Format:       "auto",
+				Fit:          "cover",
+				Quality:      80,
+				WebpAccepted: true,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  400,
+				Height: 900,
+			},
+			imageType: bimg.PNG,
+			options: &bimg.Options{
+				Width:  300,
+				Height: 300,
+				Type:   bimg.WEBP,
+				Crop:   true,
+				Embed:  true,
+			},
+		},
+		{
+			name: "contain_landscape_width_restrict",
+			imageParams: &ImageParams{
+				Width:        300,
+				Height:       300,
+				Format:       "auto",
+				Fit:          "contain",
+				Quality:      80,
+				WebpAccepted: true,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  900,
+				Height: 400,
+			},
+			imageType: bimg.PNG,
+			options: &bimg.Options{
+				Width:  300,
+				Height: 0,
+				Type:   bimg.WEBP,
+				Crop:   false,
+				Embed:  false,
+			},
+		},
+		{
+			name: "contain_landscape_height_restrict",
+			imageParams: &ImageParams{
+				Width:        900,
+				Height:       300,
+				Format:       "auto",
+				Fit:          "contain",
+				Quality:      80,
+				WebpAccepted: true,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  900,
+				Height: 400,
+			},
+			imageType: bimg.PNG,
+			options: &bimg.Options{
+				Width:  0,
+				Height: 300,
+				Type:   bimg.WEBP,
+				Crop:   false,
+				Embed:  false,
+			},
+		},
+		{
+			name: "contain_only_height",
+			imageParams: &ImageParams{
+				Height:       300,
+				Format:       "auto",
+				Fit:          "contain",
+				Quality:      80,
+				WebpAccepted: true,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  900,
+				Height: 400,
+			},
+			imageType: bimg.PNG,
+			options: &bimg.Options{
+				Width:  0,
+				Height: 300,
+				Type:   bimg.WEBP,
+				Crop:   false,
+				Embed:  false,
+			},
+		},
+		{
+			name: "contain_only_width",
+			imageParams: &ImageParams{
+				Width:        300,
+				Format:       "auto",
+				Fit:          "contain",
+				Quality:      80,
+				WebpAccepted: true,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  900,
+				Height: 400,
+			},
+			imageType: bimg.PNG,
+			options: &bimg.Options{
+				Width: 300,
+				Type:  bimg.WEBP,
+				Crop:  false,
+				Embed: false,
+			},
+		},
+		{
+			name: "scale-down",
+			imageParams: &ImageParams{
+				Width:        1200,
+				Format:       "auto",
+				Fit:          "scale-down",
+				Quality:      80,
+				WebpAccepted: true,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  900,
+				Height: 400,
+			},
+			imageType: bimg.PNG,
+			options: &bimg.Options{
+				Width: 900,
+				Type:  bimg.WEBP,
+				Crop:  false,
+				Embed: false,
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := tc.imageParams.ToBimgOptions(tc.imageSize, tc.imageType)
+
+			if !bimgOptsAreEqual(tc.options, opts) {
+				t.Fatalf("Expected %s but result is %s",
+					bimgOptsToString(tc.options),
+					bimgOptsToString(opts),
+				)
+			}
+		})
+	}
 }
