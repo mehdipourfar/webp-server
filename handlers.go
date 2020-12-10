@@ -42,7 +42,10 @@ func (handler *Handler) handleGet(ctx *fasthttp.RequestCtx) {
 		fasthttp.ServeFileUncompressed(ctx, cachedFilePath)
 		return
 	}
-
+	if !ValidateImageSize(params.Width, params.Height, handler.Config) {
+		ctx.Error("Forbidden request! Invalid image size.", 403)
+		return
+	}
 	_, imageFilePath := ImageIdToFilePath(handler.Config.DATA_DIR, params.ImageId)
 
 	imgBuffer, err := bimg.Read(imageFilePath)

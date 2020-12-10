@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"mime/multipart"
@@ -27,4 +28,14 @@ func ValidateImage(header *multipart.FileHeader) bool {
 	default:
 		return false
 	}
+}
+
+func ValidateImageSize(width int, height int, config *Config) bool {
+	s := fmt.Sprintf("%dx%d", width, height)
+	for _, size := range config.VALID_SIZES {
+		if size == s {
+			return true
+		}
+	}
+	return false
 }

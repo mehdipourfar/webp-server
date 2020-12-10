@@ -14,7 +14,10 @@ func runServer(config *Config) {
 	handler := &Handler{Config: config}
 	addr := fmt.Sprintf("127.0.0.1:%d", config.SERVER_PORT)
 	log.Printf("Starting server on %s", addr)
-	fasthttp.ListenAndServe(addr, handler.handleRequests)
+	err := fasthttp.ListenAndServe(addr, handler.handleRequests)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func main() {
