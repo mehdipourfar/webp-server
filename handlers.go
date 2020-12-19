@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/teris-io/shortid"
 	"github.com/valyala/fasthttp"
@@ -16,117 +16,150 @@ type Handler struct {
 	Config *Config
 }
 
-func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
-	path := string(ctx.Path())
-	if path == "/health/" && ctx.IsGet() {
-		ctx.SetStatusCode(200)
-	} else if path == "/upload/" && ctx.IsPost() {
-		handler.handleUpload(ctx)
-	} else if strings.HasPrefix(path, "/image/") && ctx.IsGet() {
-		handler.handleGet(ctx)
-	} else {
-		ctx.Error("Not Found", 404)
+var (
+	CT_JSON = "application/json"
+	CT_JPEG = "image/jpeg"
+	CT_PNG  = "image/png"
+	CT_WEBP = "image/webp"
+	CT_GIF  = "image/gif"
+
+	PATH_HEALTH = []byte("/health/")
+	PATH_UPLOAD = []byte("/upload/")
+	PATH_IMAGE  = []byte("/image/")
+
+	ERROR_METHOD_NOT_ALLOWED = []byte(`{"error": "Method not allowed"}`)
+	ERROR_IMAGE_NOT_PROVIDED = []byte(`{"error": "image_file field not provided"}`)
+	ERROR_FILE_IS_NOT_IMAGE  = []byte(`{"error": "Provided file is not an accepted image"}`)
+	ERROR_INVALID_TOKEN      = []byte(`{"error": "Invalid Token"}`)
+	ERROR_INVALID_OPTIONS    = []byte(`{"error": "Invalid options"}`)
+	ERROR_INVALID_IMAGE_SIZE = []byte(`{"error": "Invalid image size"}`)
+	ERROR_IMAGE_NOT_FOUND    = []byte(`{"error": "Image not found"}`)
+	ERROR_ADDRESS_NOT_FOUND  = []byte(`{"error": "Address not found"}`)
+	ERROR_SERVER             = []byte(`{"error": "Internal Server Error"}`)
+)
+
+func jsonResponse(ctx *fasthttp.RequestCtx, status int, body []byte) {
+	ctx.SetStatusCode(status)
+	ctx.SetContentType(CT_JSON)
+	ctx.SetBody(body)
+}
+
+func handleError(ctx *fasthttp.RequestCtx) {
+	if err := recover(); err != nil {
+		ctx.ResetBody()
+		jsonResponse(ctx, 500, ERROR_SERVER)
+		log.Println(err)
 	}
 }
 
-func (handler *Handler) handleGet(ctx *fasthttp.RequestCtx) {
-	params, err := GetImageParamsFromRequest(&ctx.Request.Header, handler.Config)
-	if err != nil {
-		log.Println(err)
-		ctx.Error("Unsupported Path", 400)
-		return
-	}
-	cachedParentDir, cachedFilePath := params.GetCachePath(handler.Config.DATA_DIR)
-	if _, err := os.Stat(cachedFilePath); err == nil && false {
-		// cachedFile exists
-		fasthttp.ServeFileUncompressed(ctx, cachedFilePath)
-		return
-	}
-	if !ValidateImageSize(params.Width, params.Height, handler.Config) {
-		ctx.Error("Forbidden request! Invalid image size.", 403)
-		return
-	}
-	_, imageFilePath := ImageIdToFilePath(handler.Config.DATA_DIR, params.ImageId)
+func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
+	defer handleError(ctx)
 
-	imgBuffer, err := bimg.Read(imageFilePath)
+	path := ctx.Path()
 
-	if err != nil {
-		log.Println(err)
-		ctx.Error("Internal Server Error", 500)
-		return
+	if bytes.Equal(path, PATH_HEALTH) {
+		jsonResponse(ctx, 200, []byte(`{"status": "ok"}`))
+	} else if bytes.Equal(path, PATH_UPLOAD) {
+		handler.handleUpload(ctx)
+	} else if bytes.HasPrefix(path, PATH_IMAGE) {
+		handler.handleFetch(ctx)
+	} else {
+		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
 	}
-
-	convertedImage, imageType, err := Convert(imgBuffer, params)
-
-	if err != nil {
-		if os.IsNotExist(err) {
-			ctx.SetStatusCode(404)
-			ctx.SetBody([]byte("Not Found"))
-			return
-		}
-		log.Println(err)
-		ctx.Error("Internal Server Error", 500)
-		return
-	}
-
-	if err := os.MkdirAll(cachedParentDir, 0755); err != nil {
-		log.Println(err)
-		ctx.Error("Internal Server Error", 500)
-		return
-	}
-	if err := ioutil.WriteFile(cachedFilePath, convertedImage, 0604); err != nil {
-		log.Println(err)
-		ctx.Error("Internal Server Error", 500)
-	}
-
-	switch imageType {
-	case bimg.JPEG:
-		ctx.SetContentType("image/jpeg")
-	case bimg.PNG:
-		ctx.SetContentType("image/png")
-	case bimg.WEBP:
-		ctx.SetContentType("image/webp")
-	case bimg.GIF:
-		ctx.SetContentType("image/gif")
-	}
-	ctx.SetBody(convertedImage)
-
 }
 
 func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsPost() {
+		jsonResponse(ctx, 405, ERROR_METHOD_NOT_ALLOWED)
+		return
+	}
+
 	if len(handler.Config.TOKEN) != 0 &&
 		handler.Config.TOKEN != string(ctx.Request.Header.Peek("Token")) {
-		ctx.SetContentType("application/json")
-		ctx.SetBody([]byte(`{"error": "Invalid Token"}`))
-		ctx.SetStatusCode(401)
+		jsonResponse(ctx, 401, ERROR_INVALID_TOKEN)
 		return
 	}
 
 	imageId := shortid.GetDefault().MustGenerate()
-
-	ctx.SetContentType("application/json")
-	header, err := ctx.FormFile("image_file")
+	fileHeader, err := ctx.FormFile("image_file")
 	if err != nil {
-		ctx.SetBody([]byte(`{"error": "image_file field not provided"}`))
-		ctx.SetStatusCode(400)
+		jsonResponse(ctx, 400, ERROR_IMAGE_NOT_PROVIDED)
 		return
 	}
-	if imageValidated := ValidateImage(header); !imageValidated {
-		ctx.SetBody([]byte(`{"error": "provided file is not an image"}`))
-		ctx.SetStatusCode(400)
+	if imageValidated := ValidateImage(fileHeader); !imageValidated {
+		jsonResponse(ctx, 400, ERROR_FILE_IS_NOT_IMAGE)
 		return
 	}
 
 	parentDir, filePath := ImageIdToFilePath(handler.Config.DATA_DIR, imageId)
 	if err := os.MkdirAll(parentDir, 0755); err != nil {
-		log.Println(err)
-		ctx.Error("Internal Server Error", 500)
+		panic(err)
 		return
 	}
-	if err := fasthttp.SaveMultipartFile(header, filePath); err != nil {
-		log.Println(err)
-		ctx.Error("Internal Server Error", 500)
+	if err := fasthttp.SaveMultipartFile(fileHeader, filePath); err != nil {
+		panic(err)
 		return
 	}
-	ctx.SetBody([]byte(fmt.Sprintf(`{"image_id": "%s"}`, imageId)))
+	jsonResponse(ctx, 200, []byte(fmt.Sprintf(`{"image_id": "%s"}`, imageId)))
+}
+
+func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsGet() {
+		jsonResponse(ctx, 405, ERROR_METHOD_NOT_ALLOWED)
+		return
+	}
+
+	imageParams, err := GetImageParamsFromRequest(
+		&ctx.Request.Header,
+		handler.Config,
+	)
+	if err != nil {
+		jsonResponse(ctx, 400, ERROR_INVALID_OPTIONS)
+		return
+	}
+	cacheParentDir, cacheFilePath := imageParams.GetCachePath(handler.Config.DATA_DIR)
+	if _, err := os.Stat(cacheFilePath); err == nil {
+		// cached file exists
+		fasthttp.ServeFileUncompressed(ctx, cacheFilePath)
+		return
+	}
+
+	if !ValidateImageSize(imageParams.Width, imageParams.Height, handler.Config) {
+		jsonResponse(ctx, 403, ERROR_INVALID_IMAGE_SIZE)
+		return
+	}
+	_, imageFilePath := ImageIdToFilePath(handler.Config.DATA_DIR, imageParams.ImageId)
+
+	imgBuffer, err := bimg.Read(imageFilePath)
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
+			return
+		}
+		panic(err)
+	}
+
+	convertedImage, imageType, err := Convert(imgBuffer, imageParams)
+	if err != nil {
+		panic(err)
+	}
+	if err := os.MkdirAll(cacheParentDir, 0755); err != nil {
+		panic(err)
+	}
+	if err := ioutil.WriteFile(cacheFilePath, convertedImage, 0604); err != nil {
+		panic(err)
+	}
+
+	switch imageType {
+	case bimg.JPEG:
+		ctx.SetContentType(CT_JPEG)
+	case bimg.PNG:
+		ctx.SetContentType(CT_PNG)
+	case bimg.WEBP:
+		ctx.SetContentType(CT_WEBP)
+	case bimg.GIF:
+		ctx.SetContentType(CT_GIF)
+	}
+	ctx.SetBody(convertedImage)
 }

@@ -48,7 +48,7 @@ func GetImageParamsFromRequest(header *fasthttp.RequestHeader, config *Config) (
 		return nil, fmt.Errorf("Not Match")
 	}
 
-	imageId := string(match[2])
+	options, imageId := string(match[1]), string(match[2])
 
 	params := &ImageParams{
 		ImageId:      imageId,
@@ -60,39 +60,37 @@ func GetImageParamsFromRequest(header *fasthttp.RequestHeader, config *Config) (
 
 	var err error
 
-	for _, item := range strings.Split(string(match[1]), ",") {
-		keyVal := strings.Split(item, "=")
-		if len(keyVal) != 2 {
-			return nil, fmt.Errorf("Bad Filter Param, %v", keyVal)
+	for _, op := range strings.Split(options, ",") {
+		kv := strings.Split(op, "=")
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("Bad Filter Param, %v", kv)
 		}
-		switch keyVal[0] {
+		key, val := kv[0], kv[1]
+
+		switch key {
 		case "width", "w":
-			if params.Width, err = strconv.Atoi(keyVal[1]); err != nil {
+			if params.Width, err = strconv.Atoi(val); err != nil {
 				return nil, fmt.Errorf("Width should be integer")
 			}
 		case "height", "h":
-			if params.Height, err = strconv.Atoi(keyVal[1]); err != nil {
+			if params.Height, err = strconv.Atoi(val); err != nil {
 				return nil, fmt.Errorf("Height should be integer")
 			}
-		case "quality", "q":
-			if params.Quality, err = strconv.Atoi(keyVal[1]); err != nil {
-				return nil, fmt.Errorf("Quality should be integer")
-			}
 		case "fit":
-			if fit := keyVal[1]; fit == FIT_COVER || fit == FIT_CONTAIN || fit == FIT_SCALE_DOWN {
-				params.Fit = fit
+			if val == FIT_COVER || val == FIT_CONTAIN || val == FIT_SCALE_DOWN {
+				params.Fit = val
 			} else {
 				return nil, fmt.Errorf("Supported fits are cover, contain and scale-down")
 			}
 		case "format", "f":
-			f := keyVal[1]
-			if f == FORMAT_WEBP || f == FORMAT_JPEG || f == FORMAT_PNG || f == FORMAT_AUTO || f == FORMAT_ORIGINAL {
-				params.Format = f
+			if val == FORMAT_WEBP || val == FORMAT_JPEG || val == FORMAT_PNG ||
+				val == FORMAT_AUTO || val == FORMAT_ORIGINAL {
+				params.Format = val
 			} else {
 				return nil, fmt.Errorf("Supported formats are auto, original, webp, jpeg and png")
 			}
 		default:
-			return nil, fmt.Errorf("Invalid filter key: %s", keyVal[0])
+			return nil, fmt.Errorf("Invalid filter key: %s", key)
 		}
 	}
 
@@ -191,18 +189,18 @@ func Convert(fileBuffer []byte, params *ImageParams) ([]byte, bimg.ImageType, er
 
 	if imageType == bimg.GIF {
 		// ignore gif conversion
-		return fileBuffer, bimg.GIF, nil
+		return fileBuffer, imageType.GIF, nil
 	}
 	img := bimg.NewImage(fileBuffer)
 	size, err := img.Size()
 	if err != nil {
-		return nil, imageType, err
+		return nil, 0, err
 	}
 
 	options := params.ToBimgOptions(&size, imageType)
 	newImage, err := img.Process(*options)
 	if err != nil {
-		return nil, options.Type, err
+		return nil, 0, err
 	}
 	return newImage, options.Type, nil
 }

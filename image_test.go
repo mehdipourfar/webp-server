@@ -213,7 +213,6 @@ func TestGetParamsFromUri(t *testing.T) {
 					tc.expectedParams, resultParams)
 			}
 		})
-
 	}
 
 }
