@@ -20,9 +20,9 @@ func ValidateImage(header *multipart.FileHeader) bool {
 		log.Println(err)
 		return false
 	}
-	fileType := http.DetectContentType(buff)
+	ct := http.DetectContentType(buff)
 
-	switch fileType {
+	switch ct {
 	case "image/jpeg", "image/jpg", "image/gif", "image/png", "image/webp":
 		return true
 	default:

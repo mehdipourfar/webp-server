@@ -17,7 +17,6 @@ type Handler struct {
 }
 
 var (
-	CT_JSON = "application/json"
 	CT_JPEG = "image/jpeg"
 	CT_PNG  = "image/png"
 	CT_WEBP = "image/webp"
@@ -31,7 +30,6 @@ var (
 	ERROR_IMAGE_NOT_PROVIDED = []byte(`{"error": "image_file field not provided"}`)
 	ERROR_FILE_IS_NOT_IMAGE  = []byte(`{"error": "Provided file is not an accepted image"}`)
 	ERROR_INVALID_TOKEN      = []byte(`{"error": "Invalid Token"}`)
-	ERROR_INVALID_OPTIONS    = []byte(`{"error": "Invalid options"}`)
 	ERROR_INVALID_IMAGE_SIZE = []byte(`{"error": "Invalid image size"}`)
 	ERROR_IMAGE_NOT_FOUND    = []byte(`{"error": "Image not found"}`)
 	ERROR_ADDRESS_NOT_FOUND  = []byte(`{"error": "Address not found"}`)
@@ -40,7 +38,7 @@ var (
 
 func jsonResponse(ctx *fasthttp.RequestCtx, status int, body []byte) {
 	ctx.SetStatusCode(status)
-	ctx.SetContentType(CT_JSON)
+	ctx.SetContentType("application/json")
 	ctx.SetBody(body)
 }
 
@@ -57,12 +55,12 @@ func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
 
 	path := ctx.Path()
 
-	if bytes.Equal(path, PATH_HEALTH) {
-		jsonResponse(ctx, 200, []byte(`{"status": "ok"}`))
+	if bytes.HasPrefix(path, PATH_IMAGE) {
+		handler.handleFetch(ctx)
 	} else if bytes.Equal(path, PATH_UPLOAD) {
 		handler.handleUpload(ctx)
-	} else if bytes.HasPrefix(path, PATH_IMAGE) {
-		handler.handleFetch(ctx)
+	} else if bytes.Equal(path, PATH_HEALTH) {
+		jsonResponse(ctx, 200, []byte(`{"status": "ok"}`))
 	} else {
 		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
 	}
@@ -114,7 +112,8 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		handler.Config,
 	)
 	if err != nil {
-		jsonResponse(ctx, 400, ERROR_INVALID_OPTIONS)
+		errorBody := []byte(fmt.Sprintf(`{"error": "Invalid options: %v"}`, err))
+		jsonResponse(ctx, 400, errorBody)
 		return
 	}
 	cacheParentDir, cacheFilePath := imageParams.GetCachePath(handler.Config.DATA_DIR)

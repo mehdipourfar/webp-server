@@ -18,7 +18,9 @@ func init() {
 	bimg.VipsCacheSetMaxMem(0)
 }
 
-var imageUrlRegex = regexp.MustCompile("/image/(?P<filterParams>[0-9a-z,=-]+)/(?P<imageId>[0-9a-zA-Z_-]+)")
+var (
+	imageUrlRegex = regexp.MustCompile("/image/(?P<filterParams>[0-9a-z,=-]+)/(?P<imageId>[0-9a-zA-Z_-]+)")
+)
 
 const (
 	FIT_COVER      = "cover"
@@ -77,16 +79,17 @@ func GetImageParamsFromRequest(header *fasthttp.RequestHeader, config *Config) (
 				return nil, fmt.Errorf("Height should be integer")
 			}
 		case "fit":
-			if val == FIT_COVER || val == FIT_CONTAIN || val == FIT_SCALE_DOWN {
+			switch val {
+			case FIT_CONTAIN, FIT_COVER, FIT_SCALE_DOWN:
 				params.Fit = val
-			} else {
+			default:
 				return nil, fmt.Errorf("Supported fits are cover, contain and scale-down")
 			}
 		case "format", "f":
-			if val == FORMAT_WEBP || val == FORMAT_JPEG || val == FORMAT_PNG ||
-				val == FORMAT_AUTO || val == FORMAT_ORIGINAL {
+			switch val {
+			case FORMAT_WEBP, FORMAT_JPEG, FORMAT_PNG, FORMAT_AUTO, FORMAT_ORIGINAL:
 				params.Format = val
-			} else {
+			default:
 				return nil, fmt.Errorf("Supported formats are auto, original, webp, jpeg and png")
 			}
 		default:
@@ -189,7 +192,7 @@ func Convert(fileBuffer []byte, params *ImageParams) ([]byte, bimg.ImageType, er
 
 	if imageType == bimg.GIF {
 		// ignore gif conversion
-		return fileBuffer, imageType.GIF, nil
+		return fileBuffer, imageType, nil
 	}
 	img := bimg.NewImage(fileBuffer)
 	size, err := img.Size()
