@@ -33,6 +33,7 @@ func bimgOptsToString(o *bimg.Options) string {
 		o.Type, o.Width, o.Height, o.Crop, o.Embed,
 	)
 }
+
 func bimgOptsAreEqual(o1 *bimg.Options, o2 *bimg.Options) bool {
 	return o1.Type == o2.Type && o1.Width == o2.Width &&
 		o1.Height == o2.Height && o1.Crop == o2.Crop && o1.Embed == o2.Embed
@@ -47,7 +48,6 @@ func TestImagePath(t *testing.T) {
 	if filePath != "/tmp/media/images/y/mW/FyBmW7C2f" {
 		t.Errorf("Something wrong with image file path: %s", filePath)
 	}
-
 }
 
 func TestCachePath(t *testing.T) {
@@ -202,15 +202,57 @@ func TestGetParamsFromUri(t *testing.T) {
 			},
 			err: nil,
 		},
+		{
+			testId:         9,
+			header:         createRequestHeader("/image/width=ff,height=0/NG4uQBa2f", true),
+			expectedParams: &ImageParams{},
+			err:            fmt.Errorf("Width should be integer"),
+		},
+		{
+			testId:         10,
+			header:         createRequestHeader("/image/width=10,height=gg/NG4uQBa2f", true),
+			expectedParams: &ImageParams{},
+			err:            fmt.Errorf("Height should be integer"),
+		},
+		{
+			testId:         11,
+			header:         createRequestHeader("/image/width=10,height=gg/NG4uQBa2f", true),
+			expectedParams: &ImageParams{},
+			err:            fmt.Errorf("Height should be integer"),
+		},
+		{
+			testId:         12,
+			header:         createRequestHeader("/image/width==/NG4uQBa2f", true),
+			expectedParams: &ImageParams{},
+			err:            fmt.Errorf("Invalid param: width=="),
+		},
+		{
+			testId:         13,
+			header:         createRequestHeader("/image/fit=stretch/NG4uQBa2f", true),
+			expectedParams: &ImageParams{},
+			err:            fmt.Errorf("Supported fits are cover, contain and scale-down"),
+		},
+		{
+			testId:         14,
+			header:         createRequestHeader("/image/format=gif/NG4uQBa2f", true),
+			expectedParams: &ImageParams{},
+			err:            fmt.Errorf("Supported formats are auto, original, webp, jpeg and png"),
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("ImageParamsFromUri %d", tc.testId), func(t *testing.T) {
-			resultParams, _ := GetImageParamsFromRequest(tc.header, config)
+			resultParams, err := GetImageParamsFromRequest(tc.header, config)
 
-			if !tc.expectedParams.IsEqual(resultParams) {
-				t.Fatalf("Expected %v as imageParams but result is %v",
-					tc.expectedParams, resultParams)
+			if tc.err != nil {
+				if tc.err.Error() != err.Error() {
+					t.Fatalf("Expected error %v but got %v", tc.err, err)
+				}
+			} else {
+				if !tc.expectedParams.IsEqual(resultParams) {
+					t.Fatalf("Expected %v as imageParams but result is %v",
+						tc.expectedParams, resultParams)
+				}
 			}
 		})
 	}

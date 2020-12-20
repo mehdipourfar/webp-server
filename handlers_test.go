@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttputil"
+	bimg "gopkg.in/h2non/bimg.v1"
 	"io/ioutil"
 	"mime/multipart"
 	"net"
@@ -12,7 +14,18 @@ import (
 	"testing"
 )
 
-var TOKEN = []byte("123")
+var (
+	TOKEN          = []byte("123")
+	TEST_FILE_PNG  = "./testdata/test.png"
+	TEST_FILE_JPEG = "./testdata/test.jpg"
+	TEST_FILE_WEBP = "./testdata/test.webp"
+	TEST_FILE_GIF  = "./testdata/test.gif"
+	TEST_FILE_PDF  = "./testdata/test.pdf"
+)
+
+type UploadResult struct {
+	ImageId string `json:"image_id"`
+}
 
 func createRequest(uri, method string, token []byte, body *bytes.Buffer) *fasthttp.Request {
 	req := fasthttp.AcquireRequest()
@@ -30,7 +43,7 @@ func createRequest(uri, method string, token []byte, body *bytes.Buffer) *fastht
 }
 
 func createUploadRequest(
-	uri, method string,
+	method string,
 	token []byte,
 	paramName, path string,
 ) *fasthttp.Request {
@@ -63,7 +76,7 @@ func createUploadRequest(
 	if err != nil {
 		panic(err)
 	}
-	req := createRequest(uri, method, token, body)
+	req := createRequest("http://test/upload/", method, token, body)
 	req.Header.SetContentType(ct)
 	return req
 }
@@ -129,7 +142,6 @@ func TestHealthFunc(t *testing.T) {
 func TestUploadFunc(t *testing.T) {
 	handler := getHandler()
 	defer os.RemoveAll(handler.Config.DATA_DIR)
-	uploadUri := "http://test/upload/"
 
 	tt := []struct {
 		name           string
@@ -143,7 +155,7 @@ func TestUploadFunc(t *testing.T) {
 		{
 			name:           "Incorrect Method",
 			method:         "GET",
-			imagePath:      "./testdata/test.jpg",
+			imagePath:      TEST_FILE_JPEG,
 			imageParamName: "image_file",
 			token:          nil,
 			expectedStatus: 405,
@@ -152,7 +164,7 @@ func TestUploadFunc(t *testing.T) {
 		{
 			name:           "Missing Token",
 			method:         "POST",
-			imagePath:      "./testdata/test.jpg",
+			imagePath:      TEST_FILE_JPEG,
 			imageParamName: "image_file",
 			token:          nil,
 			expectedStatus: 401,
@@ -161,7 +173,7 @@ func TestUploadFunc(t *testing.T) {
 		{
 			name:           "Invalid Param Name",
 			method:         "POST",
-			imagePath:      "./testdata/test.jpg",
+			imagePath:      TEST_FILE_JPEG,
 			imageParamName: "image_fileee",
 			token:          TOKEN,
 			expectedStatus: 400,
@@ -170,7 +182,7 @@ func TestUploadFunc(t *testing.T) {
 		{
 			name:           "Successful Jpeg Upload",
 			method:         "POST",
-			imagePath:      "./testdata/test.jpg",
+			imagePath:      TEST_FILE_JPEG,
 			imageParamName: "image_file",
 			token:          TOKEN,
 			expectedStatus: 200,
@@ -179,7 +191,7 @@ func TestUploadFunc(t *testing.T) {
 		{
 			name:           "Successful PNG Upload",
 			method:         "POST",
-			imagePath:      "./testdata/test.png",
+			imagePath:      TEST_FILE_PNG,
 			imageParamName: "image_file",
 			token:          TOKEN,
 			expectedStatus: 200,
@@ -188,7 +200,7 @@ func TestUploadFunc(t *testing.T) {
 		{
 			name:           "Successful WEBP Upload",
 			method:         "POST",
-			imagePath:      "./testdata/test.webp",
+			imagePath:      TEST_FILE_WEBP,
 			imageParamName: "image_file",
 			token:          TOKEN,
 			expectedStatus: 200,
@@ -197,7 +209,7 @@ func TestUploadFunc(t *testing.T) {
 		{
 			name:           "Failed pdf Upload",
 			method:         "POST",
-			imagePath:      "./testdata/test.pdf",
+			imagePath:      TEST_FILE_PDF,
 			imageParamName: "image_file",
 			token:          TOKEN,
 			expectedStatus: 400,
@@ -208,7 +220,7 @@ func TestUploadFunc(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("Test upload errors %s", tc.name), func(t *testing.T) {
 			req := createUploadRequest(
-				uploadUri, tc.method, tc.token,
+				tc.method, tc.token,
 				tc.imageParamName, tc.imagePath,
 			)
 			resp := serve(handler.handleRequests, req)
@@ -225,6 +237,143 @@ func TestUploadFunc(t *testing.T) {
 				!bytes.Equal(body, tc.expectedError) {
 				t.Fatalf("Expected %s as error but got %s",
 					string(tc.expectedError), string(body))
+			}
+		})
+	}
+}
+
+func TestFetchFunc(t *testing.T) {
+	handler := getHandler()
+	defer os.RemoveAll(handler.Config.DATA_DIR)
+	tt := []struct {
+		name           string
+		uploadFilePath string
+		fetchOpts      string
+		webpAccepted   bool
+		expectedStatus int
+		expectedError  []byte
+		expectedCt     string
+		expectedWidth  int
+		expectedHeight int
+	}{
+		{
+			name:           "test png with web accepted false",
+			uploadFilePath: TEST_FILE_PNG,
+			fetchOpts:      "w=500,h=500,fit=cover",
+			webpAccepted:   false,
+			expectedStatus: 200,
+			expectedError:  nil,
+			expectedCt:     CT_JPEG,
+			expectedWidth:  500,
+			expectedHeight: 500,
+		},
+		{
+			name:           "test png with webp accepted true",
+			uploadFilePath: TEST_FILE_PNG,
+			fetchOpts:      "w=500,h=500,fit=cover",
+			webpAccepted:   true,
+			expectedStatus: 200,
+			expectedError:  nil,
+			expectedCt:     CT_WEBP,
+			expectedWidth:  500,
+			expectedHeight: 500,
+		},
+		{
+			name:           "test png with original format",
+			uploadFilePath: TEST_FILE_PNG,
+			fetchOpts:      "w=500,h=500,fit=cover,format=original",
+			webpAccepted:   true,
+			expectedStatus: 200,
+			expectedError:  nil,
+			expectedCt:     CT_PNG,
+			expectedWidth:  500,
+			expectedHeight: 500,
+		},
+		{
+			name:           "test webp with webp accepted false",
+			uploadFilePath: TEST_FILE_WEBP,
+			fetchOpts:      "w=500,h=500,fit=cover",
+			webpAccepted:   false,
+			expectedStatus: 200,
+			expectedError:  nil,
+			expectedCt:     CT_JPEG,
+			expectedWidth:  500,
+			expectedHeight: 500,
+		},
+		{
+			name:           "test webp with webp accepted false and original format",
+			uploadFilePath: TEST_FILE_WEBP,
+			fetchOpts:      "w=500,h=500,fit=cover,format=original",
+			webpAccepted:   false,
+			expectedStatus: 200,
+			expectedError:  nil,
+			expectedCt:     CT_WEBP,
+			expectedWidth:  500,
+			expectedHeight: 500,
+		},
+		{
+			name:           "test string as width",
+			uploadFilePath: TEST_FILE_JPEG,
+			fetchOpts:      "w=hi,h=500,fit=cover,format=original",
+			webpAccepted:   false,
+			expectedStatus: 400,
+			expectedError:  []byte(`{"error": "Invalid options: Width should be integer"}`),
+			expectedCt:     CT_JSON,
+			expectedWidth:  500,
+			expectedHeight: 500,
+		},
+	}
+	for _, tc := range tt {
+		t.Run(fmt.Sprintf("Test upload errors %s", tc.name), func(t *testing.T) {
+			uploadReq := createUploadRequest(
+				"POST", TOKEN,
+				"image_file", tc.uploadFilePath,
+			)
+			uploadResp := serve(handler.handleRequests, uploadReq)
+
+			if uploadResp.Header.StatusCode() != 200 {
+				t.Fatalf("Expected upload status 200 but got %d",
+					uploadResp.Header.StatusCode())
+			}
+			uploadResult := &UploadResult{}
+			err := json.Unmarshal(uploadResp.Body(), uploadResult)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fetchUri := fmt.Sprintf("http://test/image/%s/%s", tc.fetchOpts, uploadResult.ImageId)
+			fetchReq := createRequest(fetchUri, "GET", nil, nil)
+			if tc.webpAccepted {
+				fetchReq.Header.SetBytesKV([]byte("accept"), []byte("webp"))
+			}
+			fetchResp := serve(handler.handleRequests, fetchReq)
+			status := fetchResp.Header.StatusCode()
+			if status != tc.expectedStatus {
+				t.Fatalf("Expected fetch status %d but got %d.",
+					tc.expectedStatus, status)
+			}
+			ct := string(fetchResp.Header.ContentType())
+			if ct != tc.expectedCt {
+				t.Fatalf("Expected %s as content type but got %s",
+					tc.expectedCt, ct)
+			}
+			body := fetchResp.Body()
+			if status != 200 {
+				if !bytes.Equal(tc.expectedError, body) {
+					t.Fatalf("Expected %s as error but got %s",
+						string(tc.expectedError), string(body))
+				}
+			} else {
+				img := bimg.NewImage(body)
+				size, err := img.Size()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if size.Width != tc.expectedWidth {
+					t.Fatalf("Expected width=%d but is %d", tc.expectedWidth, size.Width)
+				}
+				if size.Height != tc.expectedHeight {
+					t.Fatalf("Expected height=%d but is %d", tc.expectedHeight, size.Height)
+				}
 			}
 		})
 	}

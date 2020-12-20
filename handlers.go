@@ -21,6 +21,7 @@ var (
 	CT_PNG  = "image/png"
 	CT_WEBP = "image/webp"
 	CT_GIF  = "image/gif"
+	CT_JSON = "application/json"
 
 	PATH_HEALTH = []byte("/health/")
 	PATH_UPLOAD = []byte("/upload/")
@@ -38,10 +39,12 @@ var (
 
 func jsonResponse(ctx *fasthttp.RequestCtx, status int, body []byte) {
 	ctx.SetStatusCode(status)
-	ctx.SetContentType("application/json")
+	ctx.SetContentType(CT_JSON)
 	ctx.SetBody(body)
 }
 
+// In case of ocurring any panic in code, this function will serve
+// 500 error and log the error message.
 func handleError(ctx *fasthttp.RequestCtx) {
 	if err := recover(); err != nil {
 		ctx.ResetBody()
@@ -50,6 +53,7 @@ func handleError(ctx *fasthttp.RequestCtx) {
 	}
 }
 
+// router function
 func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
 	defer handleError(ctx)
 
@@ -111,11 +115,17 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		&ctx.Request.Header,
 		handler.Config,
 	)
+
 	if err != nil {
-		errorBody := []byte(fmt.Sprintf(`{"error": "Invalid options: %v"}`, err))
-		jsonResponse(ctx, 400, errorBody)
+		if err.Error() == "404" {
+			jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
+		} else {
+			errorBody := []byte(fmt.Sprintf(`{"error": "Invalid options: %v"}`, err))
+			jsonResponse(ctx, 400, errorBody)
+		}
 		return
 	}
+
 	cacheParentDir, cacheFilePath := imageParams.GetCachePath(handler.Config.DATA_DIR)
 	if _, err := os.Stat(cacheFilePath); err == nil {
 		// cached file exists

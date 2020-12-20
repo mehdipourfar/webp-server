@@ -18,10 +18,6 @@ func init() {
 	bimg.VipsCacheSetMaxMem(0)
 }
 
-var (
-	imageUrlRegex = regexp.MustCompile("/image/(?P<filterParams>[0-9a-z,=-]+)/(?P<imageId>[0-9a-zA-Z_-]+)")
-)
-
 const (
 	FIT_COVER      = "cover"
 	FIT_CONTAIN    = "contain"
@@ -32,6 +28,10 @@ const (
 	FORMAT_JPEG     = "jpeg"
 	FORMAT_PNG      = "png"
 	FORMAT_WEBP     = "webp"
+)
+
+var (
+	IMAGE_URI_REGEX = regexp.MustCompile("/image/(?P<filterParams>[0-9a-z,=-]+)/(?P<imageId>[0-9a-zA-Z_-]+)")
 )
 
 type ImageParams struct {
@@ -45,9 +45,9 @@ type ImageParams struct {
 }
 
 func GetImageParamsFromRequest(header *fasthttp.RequestHeader, config *Config) (*ImageParams, error) {
-	match := imageUrlRegex.FindSubmatch(header.RequestURI())
+	match := IMAGE_URI_REGEX.FindSubmatch(header.RequestURI())
 	if len(match) != 3 {
-		return nil, fmt.Errorf("Not Match")
+		return nil, fmt.Errorf("404")
 	}
 
 	options, imageId := string(match[1]), string(match[2])
@@ -65,7 +65,7 @@ func GetImageParamsFromRequest(header *fasthttp.RequestHeader, config *Config) (
 	for _, op := range strings.Split(options, ",") {
 		kv := strings.Split(op, "=")
 		if len(kv) != 2 {
-			return nil, fmt.Errorf("Bad Filter Param, %v", kv)
+			return nil, fmt.Errorf("Invalid param: %s", op)
 		}
 		key, val := kv[0], kv[1]
 
