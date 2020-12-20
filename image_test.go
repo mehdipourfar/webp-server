@@ -86,13 +86,17 @@ func TestGetParamsFromUri(t *testing.T) {
 
 	tt := []struct {
 		testId         int
-		header         *fasthttp.RequestHeader
+		imageId        string
+		options        string
+		webpAccepted   bool
 		expectedParams *ImageParams
 		err            error
 	}{
 		{
-			testId: 1,
-			header: createRequestHeader("/image/w=500,h=500,fit=contain/NG4uQBa2f", false),
+			testId:       1,
+			imageId:      "NG4uQBa2f",
+			options:      "w=500,h=500,fit=contain",
+			webpAccepted: false,
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "contain",
@@ -105,8 +109,10 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId: 2,
-			header: createRequestHeader("/image/width=300,height=300,fit=contain/NG4uQBa2f", false),
+			testId:       2,
+			imageId:      "NG4uQBa2f",
+			options:      "w=300,h=300,fit=contain",
+			webpAccepted: false,
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "contain",
@@ -119,8 +125,10 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId: 3,
-			header: createRequestHeader("/image/width=300,height=300,fit=contain/NG4uQBa2f", true),
+			testId:       3,
+			imageId:      "NG4uQBa2f",
+			options:      "w=300,h=300,fit=contain",
+			webpAccepted: true,
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "contain",
@@ -133,8 +141,10 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId: 4,
-			header: createRequestHeader("/image/width=300,height=300,fit=cover/NG4uQBa2f", true),
+			testId:       4,
+			imageId:      "NG4uQBa2f",
+			options:      "w=300,h=300,fit=cover",
+			webpAccepted: true,
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "cover",
@@ -147,8 +157,10 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId: 5,
-			header: createRequestHeader("/image/width=300,height=300,fit=cover,format=jpeg/NG4uQBa2f", true),
+			testId:       5,
+			imageId:      "NG4uQBa2f",
+			options:      "w=300,h=300,fit=cover,format=jpeg",
+			webpAccepted: true,
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "cover",
@@ -161,22 +173,10 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId: 6,
-			header: createRequestHeader("/image/width=300,height=300,fit=cover,format=jpeg/NG4uQBa2f", true),
-			expectedParams: &ImageParams{
-				ImageId:      "NG4uQBa2f",
-				Fit:          "cover",
-				Format:       "jpeg",
-				Width:        300,
-				Height:       300,
-				Quality:      50,
-				WebpAccepted: true,
-			},
-			err: nil,
-		},
-		{
-			testId: 7,
-			header: createRequestHeader("/image/width=300,height=300,fit=scale-down,format=jpeg/NG4uQBa2f", true),
+			testId:       7,
+			imageId:      "NG4uQBa2f",
+			options:      "w=300,h=300,fit=scale-down,format=jpeg",
+			webpAccepted: true,
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "scale-down",
@@ -189,8 +189,10 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId: 8,
-			header: createRequestHeader("/image/width=0,height=0/NG4uQBa2f", true),
+			testId:       8,
+			imageId:      "NG4uQBa2f",
+			options:      "w=0,h=0,format=auto",
+			webpAccepted: true,
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "contain",
@@ -204,57 +206,62 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:         9,
-			header:         createRequestHeader("/image/width=ff,height=0/NG4uQBa2f", true),
+			imageId:        "NG4uQBa2f",
+			options:        "w=ff,h=0,format=jpeg",
+			webpAccepted:   true,
 			expectedParams: &ImageParams{},
 			err:            fmt.Errorf("Width should be integer"),
 		},
 		{
 			testId:         10,
-			header:         createRequestHeader("/image/width=10,height=gg/NG4uQBa2f", true),
-			expectedParams: &ImageParams{},
-			err:            fmt.Errorf("Height should be integer"),
-		},
-		{
-			testId:         11,
-			header:         createRequestHeader("/image/width=10,height=gg/NG4uQBa2f", true),
+			imageId:        "NG4uQBa2f",
+			options:        "w=300,h=gg,format=jpeg",
+			webpAccepted:   true,
 			expectedParams: &ImageParams{},
 			err:            fmt.Errorf("Height should be integer"),
 		},
 		{
 			testId:         12,
-			header:         createRequestHeader("/image/width==/NG4uQBa2f", true),
+			imageId:        "NG4uQBa2f",
+			options:        "w==",
+			webpAccepted:   true,
 			expectedParams: &ImageParams{},
-			err:            fmt.Errorf("Invalid param: width=="),
+			err:            fmt.Errorf("Invalid param: w=="),
 		},
 		{
 			testId:         13,
-			header:         createRequestHeader("/image/fit=stretch/NG4uQBa2f", true),
+			imageId:        "NG4uQBa2f",
+			options:        "fit=stretch",
+			webpAccepted:   true,
 			expectedParams: &ImageParams{},
 			err:            fmt.Errorf("Supported fits are cover, contain and scale-down"),
 		},
 		{
 			testId:         14,
-			header:         createRequestHeader("/image/format=gif/NG4uQBa2f", true),
+			imageId:        "NG4uQBa2f",
+			options:        "format=gif",
+			webpAccepted:   true,
 			expectedParams: &ImageParams{},
 			err:            fmt.Errorf("Supported formats are auto, original, webp, jpeg"),
 		},
 		{
 			testId:         15,
-			header:         createRequestHeader("/image/k=k/NG4uQBa2f", true),
+			imageId:        "NG4uQBa2f",
+			options:        "k=k",
+			webpAccepted:   true,
 			expectedParams: &ImageParams{},
 			err:            fmt.Errorf("Invalid filter key: k"),
-		},
-		{
-			testId:         16,
-			header:         createRequestHeader("/image//NG4uQBa2f", true),
-			expectedParams: &ImageParams{},
-			err:            fmt.Errorf("Invalid address"),
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("ImageParamsFromUri %d", tc.testId), func(t *testing.T) {
-			resultParams, err := GetImageParamsFromRequest(tc.header, config)
+			resultParams, err := CreateImageParams(
+				tc.imageId,
+				tc.options,
+				tc.webpAccepted,
+				config,
+			)
 
 			if tc.err != nil {
 				if tc.err.Error() != err.Error() {

@@ -27,6 +27,10 @@ type UploadResult struct {
 	ImageId string `json:"image_id"`
 }
 
+type ErrorResult struct {
+	Error string `json:"error"`
+}
+
 func createRequest(uri, method string, token []byte, body *bytes.Buffer) *fasthttp.Request {
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI(uri)
@@ -238,6 +242,14 @@ func TestUploadFunc(t *testing.T) {
 				t.Fatalf("Expected %s as error but got %s",
 					string(tc.expectedError), string(body))
 			}
+			if status != 200 {
+				errResult := &ErrorResult{}
+				err := json.Unmarshal(body, errResult)
+				if err != nil || errResult.Error == "" {
+					t.Fatalf("Could not parse error: (%s) %v", string(body), err)
+				}
+			}
+
 		})
 	}
 }
@@ -417,6 +429,11 @@ func TestFetchFunc(t *testing.T) {
 					t.Fatalf("Expected %s as error but got %s",
 						string(tc.expectedError), string(body))
 				}
+				errResult := &ErrorResult{}
+				err := json.Unmarshal(body, errResult)
+				if err != nil || errResult.Error == "" {
+					t.Fatalf("Could not parse error: (%s) %v", string(body), err)
+				}
 			} else {
 				img := bimg.NewImage(body)
 				size, err := img.Size()
@@ -498,7 +515,14 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 	}
 	fetchUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageId)
 	fetchReq := createRequest(fetchUri, "GET", nil, nil)
-	imageParams, _ := GetImageParamsFromRequest(&fetchReq.Header, handler.Config)
+	imageParams := &ImageParams{
+		ImageId: uploadResult.ImageId,
+		Width:   500,
+		Height:  500,
+		Quality: handler.Config.DEFAULT_IMAGE_QUALITY,
+		Fit:     FIT_COVER,
+		Format:  FORMAT_AUTO,
+	}
 	_, cachePath := imageParams.GetCachePath(handler.Config.DATA_DIR)
 	_, imagePath := ImageIdToFilePath(handler.Config.DATA_DIR, uploadResult.ImageId)
 
@@ -609,12 +633,59 @@ func TestDeleteHandler(t *testing.T) {
 				t.Fatalf("Expected %s as body but got %s",
 					string(tc.expectedBody), string(body))
 			}
+			if body != nil {
+				errResult := &ErrorResult{}
+				err := json.Unmarshal(body, errResult)
+				if err != nil || errResult.Error == "" {
+					t.Fatalf("Could not parse error: (%s) %v", string(body), err)
+				}
+			}
 		})
 	}
 
 	_, imagePath := ImageIdToFilePath(handler.Config.DATA_DIR, uploadResult.ImageId)
 	if _, err := os.Stat(imagePath); !os.IsNotExist(err) {
 		t.Fatal("Expected image to be deleted")
+	}
+
+}
+
+func TestGettingOriginalImage(t *testing.T) {
+	handler := getHandler()
+	defer os.RemoveAll(handler.Config.DATA_DIR)
+	uploadReq := createUploadRequest(
+		"POST", TOKEN,
+		"image_file", TEST_FILE_PNG,
+	)
+	uploadResult := &UploadResult{}
+	uploadResp := serve(handler.handleRequests, uploadReq)
+	json.Unmarshal(uploadResp.Body(), uploadResult)
+	uri := fmt.Sprintf("http://test/image/%s", "123456789")
+	req := createRequest(uri, "GET", nil, nil)
+	resp := serve(handler.handleRequests, req)
+	if resp.StatusCode() != 404 {
+		t.Fatalf("Expected 404 but got %d", resp.StatusCode())
+	}
+	if ct := string(resp.Header.ContentType()); ct != "application/json" {
+		t.Fatalf("Expected content type to be application/json but is %s", ct)
+	}
+	if !bytes.Equal(resp.Body(), ERROR_IMAGE_NOT_FOUND) {
+		t.Fatalf("Expected error %s but got %s", string(ERROR_IMAGE_NOT_FOUND), string(resp.Body()))
+	}
+	uri = fmt.Sprintf("http://test/image/%s", uploadResult.ImageId)
+	req = createRequest(uri, "GET", nil, nil)
+	resp = serve(handler.handleRequests, req)
+	if resp.StatusCode() != 200 {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode())
+	}
+	if ct := string(resp.Header.ContentType()); ct != "image/png" {
+		t.Fatalf("Expected content type to be image/png but is %s", ct)
+	}
+	img := bimg.NewImage(resp.Body())
+	size, _ := img.Size()
+	if size.Width != 1680 && size.Height != 1050 {
+		t.Fatalf("Expected image size to be 1680x1050 but is %dx%d",
+			size.Width, size.Height)
 	}
 
 }

@@ -38,6 +38,7 @@ var (
 	ERROR_ADDRESS_NOT_FOUND  = []byte(`{"error": "Address not found"}`)
 	ERROR_SERVER             = []byte(`{"error": "Internal Server Error"}`)
 
+	IMAGE_URI_REGEX  = regexp.MustCompile("/image/((?P<options>[0-9a-z,=-]+)/)?(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
 	DELETE_URI_REGEX = regexp.MustCompile("/delete/(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
 )
 
@@ -49,9 +50,40 @@ func jsonResponse(ctx *fasthttp.RequestCtx, status int, body []byte) {
 	}
 }
 
+func serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, checkExists bool) bool {
+	if checkExists {
+		info, err := os.Stat(filePath)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				log.Println(err)
+			}
+			return false
+		}
+		if info.IsDir() {
+			return false
+		}
+	}
+	fasthttp.ServeFileUncompressed(ctx, filePath)
+	status := ctx.Response.StatusCode()
+	ok := status < 400
+	if !ok {
+		ctx.Response.ResetBody()
+	}
+	return ok
+}
+
+func parseImageUri(requestPath []byte) (options, imageId string) {
+	match := IMAGE_URI_REGEX.FindStringSubmatch(string(requestPath))
+	if len(match) != 4 {
+		return
+	}
+	options, imageId = match[2], match[3]
+	return
+}
+
 // In case of ocurring any panic in code, this function will serve
 // 500 error and log the error message.
-func handleError(ctx *fasthttp.RequestCtx) {
+func handlePanic(ctx *fasthttp.RequestCtx) {
 	if err := recover(); err != nil {
 		ctx.ResetBody()
 		jsonResponse(ctx, 500, ERROR_SERVER)
@@ -61,7 +93,7 @@ func handleError(ctx *fasthttp.RequestCtx) {
 
 // router function
 func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
-	defer handleError(ctx)
+	defer handlePanic(ctx)
 
 	path := ctx.Path()
 
@@ -120,8 +152,25 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	imageParams, err := GetImageParamsFromRequest(
-		&ctx.Request.Header,
+	options, imageId := parseImageUri(ctx.Path())
+	if imageId == "" {
+		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
+		return
+	}
+
+	if options == "" {
+		// serve original file
+		_, path := ImageIdToFilePath(handler.Config.DATA_DIR, imageId)
+		if ok := serveFileFromDisk(ctx, path, true); !ok {
+			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
+		}
+		return
+	}
+
+	imageParams, err := CreateImageParams(
+		imageId,
+		options,
+		bytes.Contains(ctx.Request.Header.Peek("accept"), []byte("webp")),
 		handler.Config,
 	)
 
@@ -132,9 +181,8 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	}
 
 	cacheParentDir, cacheFilePath := imageParams.GetCachePath(handler.Config.DATA_DIR)
-	if _, err := os.Stat(cacheFilePath); err == nil {
-		// cached file exists
-		fasthttp.ServeFileUncompressed(ctx, cacheFilePath)
+	if ok := serveFileFromDisk(ctx, cacheFilePath, true); ok {
+		// request served from cache
 		return
 	}
 
@@ -154,7 +202,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		panic(err)
 	}
 
-	convertedImage, imageType, err := Convert(imgBuffer, imageParams)
+	convertedImage, _, err := Convert(imgBuffer, imageParams)
 	if err != nil {
 		panic(err)
 	}
@@ -165,17 +213,8 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		panic(err)
 	}
 
-	switch imageType {
-	case bimg.JPEG:
-		ctx.SetContentType(CT_JPEG)
-	case bimg.PNG:
-		ctx.SetContentType(CT_PNG)
-	case bimg.WEBP:
-		ctx.SetContentType(CT_WEBP)
-	case bimg.GIF:
-		ctx.SetContentType(CT_GIF)
-	}
-	ctx.SetBody(convertedImage)
+	ctx.Response.SetStatusCode(200)
+	serveFileFromDisk(ctx, cacheFilePath, false)
 }
 
 func (handler *Handler) handleDelete(ctx *fasthttp.RequestCtx) {

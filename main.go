@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/teris-io/shortid"
 	"github.com/valyala/fasthttp"
 )
 
 func runServer(config *Config) {
-	sid := shortid.MustNew(1, shortid.DefaultABC, 535342)
-	shortid.SetDefault(sid)
 	handler := &Handler{Config: config}
 	addr := fmt.Sprintf("%s:%d", config.SERVER_ADDR, config.SERVER_PORT)
 	log.Printf("Starting server on %s", addr)
-	err := fasthttp.ListenAndServe(addr, handler.handleRequests)
+	server := &fasthttp.Server{
+		Handler:               handler.handleRequests,
+		NoDefaultServerHeader: true,
+	}
+	err := server.ListenAndServe(addr)
 	if err != nil {
 		log.Println(err)
 	}

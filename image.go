@@ -1,14 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"crypto/md5"
 	"fmt"
-	"github.com/valyala/fasthttp"
 	bimg "gopkg.in/h2non/bimg.v1"
 	"io"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -29,10 +26,6 @@ const (
 	FORMAT_WEBP     = "webp"
 )
 
-var (
-	IMAGE_URI_REGEX = regexp.MustCompile("/image/(?P<filterParams>[0-9a-z,=-]+)/(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
-)
-
 type ImageParams struct {
 	ImageId      string
 	Width        int
@@ -43,20 +36,13 @@ type ImageParams struct {
 	WebpAccepted bool
 }
 
-func GetImageParamsFromRequest(header *fasthttp.RequestHeader, config *Config) (*ImageParams, error) {
-	match := IMAGE_URI_REGEX.FindSubmatch(header.RequestURI())
-	if len(match) != 3 {
-		return nil, fmt.Errorf("Invalid address")
-	}
-
-	options, imageId := string(match[1]), string(match[2])
-
+func CreateImageParams(imageId, options string, webpAccepted bool, config *Config) (*ImageParams, error) {
 	params := &ImageParams{
 		ImageId:      imageId,
 		Fit:          FIT_CONTAIN,
 		Format:       FORMAT_AUTO,
 		Quality:      config.DEFAULT_IMAGE_QUALITY,
-		WebpAccepted: bytes.Contains(header.Peek("accept"), []byte("webp")),
+		WebpAccepted: webpAccepted,
 	}
 
 	var err error
