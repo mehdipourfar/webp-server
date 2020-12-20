@@ -236,7 +236,19 @@ func TestGetParamsFromUri(t *testing.T) {
 			testId:         14,
 			header:         createRequestHeader("/image/format=gif/NG4uQBa2f", true),
 			expectedParams: &ImageParams{},
-			err:            fmt.Errorf("Supported formats are auto, original, webp, jpeg and png"),
+			err:            fmt.Errorf("Supported formats are auto, original, webp, jpeg"),
+		},
+		{
+			testId:         15,
+			header:         createRequestHeader("/image/k=k/NG4uQBa2f", true),
+			expectedParams: &ImageParams{},
+			err:            fmt.Errorf("Invalid filter key: k"),
+		},
+		{
+			testId:         16,
+			header:         createRequestHeader("/image//NG4uQBa2f", true),
+			expectedParams: &ImageParams{},
+			err:            fmt.Errorf("Invalid address"),
 		},
 	}
 

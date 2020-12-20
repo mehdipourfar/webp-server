@@ -26,7 +26,6 @@ const (
 	FORMAT_AUTO     = "auto"
 	FORMAT_ORIGINAL = "original"
 	FORMAT_JPEG     = "jpeg"
-	FORMAT_PNG      = "png"
 	FORMAT_WEBP     = "webp"
 )
 
@@ -47,7 +46,7 @@ type ImageParams struct {
 func GetImageParamsFromRequest(header *fasthttp.RequestHeader, config *Config) (*ImageParams, error) {
 	match := IMAGE_URI_REGEX.FindSubmatch(header.RequestURI())
 	if len(match) != 3 {
-		return nil, fmt.Errorf("404")
+		return nil, fmt.Errorf("Invalid address")
 	}
 
 	options, imageId := string(match[1]), string(match[2])
@@ -87,10 +86,10 @@ func GetImageParamsFromRequest(header *fasthttp.RequestHeader, config *Config) (
 			}
 		case "format", "f":
 			switch val {
-			case FORMAT_WEBP, FORMAT_JPEG, FORMAT_PNG, FORMAT_AUTO, FORMAT_ORIGINAL:
+			case FORMAT_WEBP, FORMAT_JPEG, FORMAT_AUTO, FORMAT_ORIGINAL:
 				params.Format = val
 			default:
-				return nil, fmt.Errorf("Supported formats are auto, original, webp, jpeg and png")
+				return nil, fmt.Errorf("Supported formats are auto, original, webp, jpeg")
 			}
 		default:
 			return nil, fmt.Errorf("Invalid filter key: %s", key)
@@ -181,8 +180,6 @@ func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize, imageType bimg.Im
 		options.Type = bimg.JPEG
 	case FORMAT_WEBP:
 		options.Type = bimg.WEBP
-	case FORMAT_PNG:
-		options.Type = bimg.PNG
 	}
 	return options
 }

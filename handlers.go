@@ -117,12 +117,8 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	)
 
 	if err != nil {
-		if err.Error() == "404" {
-			jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
-		} else {
-			errorBody := []byte(fmt.Sprintf(`{"error": "Invalid options: %v"}`, err))
-			jsonResponse(ctx, 400, errorBody)
-		}
+		errorBody := []byte(fmt.Sprintf(`{"error": "Invalid options: %v"}`, err))
+		jsonResponse(ctx, 400, errorBody)
 		return
 	}
 

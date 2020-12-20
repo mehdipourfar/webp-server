@@ -301,6 +301,50 @@ func TestFetchFunc(t *testing.T) {
 			expectedHeight: 500,
 		},
 		{
+			name:           "test gif",
+			uploadFilePath: TEST_FILE_GIF,
+			fetchOpts:      "w=500,h=500,fit=cover",
+			webpAccepted:   false,
+			expectedStatus: 200,
+			expectedError:  nil,
+			expectedCt:     CT_GIF,
+			expectedWidth:  703,
+			expectedHeight: 681,
+		},
+		{
+			name:           "Force jpeg",
+			uploadFilePath: TEST_FILE_PNG,
+			fetchOpts:      "w=500,h=500,fit=cover,format=jpeg",
+			webpAccepted:   true,
+			expectedStatus: 200,
+			expectedError:  nil,
+			expectedCt:     CT_JPEG,
+			expectedWidth:  500,
+			expectedHeight: 500,
+		},
+		{
+			name:           "Force png",
+			uploadFilePath: TEST_FILE_PNG,
+			fetchOpts:      "w=500,h=500,fit=cover,format=original",
+			webpAccepted:   false,
+			expectedStatus: 200,
+			expectedError:  nil,
+			expectedCt:     CT_PNG,
+			expectedWidth:  500,
+			expectedHeight: 500,
+		},
+		{
+			name:           "Force webp",
+			uploadFilePath: TEST_FILE_PNG,
+			fetchOpts:      "w=500,h=500,fit=cover,format=webp",
+			webpAccepted:   false,
+			expectedStatus: 200,
+			expectedError:  nil,
+			expectedCt:     CT_WEBP,
+			expectedWidth:  500,
+			expectedHeight: 500,
+		},
+		{
 			name:           "test webp with webp accepted false and original format",
 			uploadFilePath: TEST_FILE_WEBP,
 			fetchOpts:      "w=500,h=500,fit=cover,format=original",
@@ -321,6 +365,17 @@ func TestFetchFunc(t *testing.T) {
 			expectedCt:     CT_JSON,
 			expectedWidth:  500,
 			expectedHeight: 500,
+		},
+		{
+			name:           "test inacceptable dimensions",
+			uploadFilePath: TEST_FILE_JPEG,
+			fetchOpts:      "w=300,h=200,fit=cover",
+			webpAccepted:   false,
+			expectedStatus: 403,
+			expectedError:  ERROR_INVALID_IMAGE_SIZE,
+			expectedCt:     CT_JSON,
+			expectedWidth:  0,
+			expectedHeight: 0,
 		},
 	}
 	for _, tc := range tt {
@@ -377,4 +432,92 @@ func TestFetchFunc(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test404(t *testing.T) {
+	handler := &Handler{}
+	req := createRequest("http://test/hey", "GET", nil, nil)
+	resp := serve(handler.handleRequests, req)
+	if resp.StatusCode() != 404 {
+		t.Fatalf("Expected 404 but got %d", resp.StatusCode())
+	}
+	ct := string(resp.Header.ContentType())
+	if ct != "application/json" {
+		t.Fatalf("Expected content type application/json but got %s", ct)
+	}
+	if !bytes.Equal(resp.Body(), ERROR_ADDRESS_NOT_FOUND) {
+		t.Fatalf("Unexpected body: %s", string(resp.Body()))
+	}
+
+}
+
+func TestFetchFuncMethodShouldBeGet(t *testing.T) {
+	handler := getHandler()
+	defer os.RemoveAll(handler.Config.DATA_DIR)
+	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "POST", nil, nil)
+	resp := serve(handler.handleRequests, req)
+	if resp.StatusCode() != 405 {
+		t.Fatalf("Expected 405 but got %d", resp.StatusCode())
+	}
+}
+
+func TestFetchFuncWithInvalidImageId(t *testing.T) {
+	handler := getHandler()
+	defer os.RemoveAll(handler.Config.DATA_DIR)
+	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "GET", nil, nil)
+	resp := serve(handler.handleRequests, req)
+	if resp.StatusCode() != 404 {
+		t.Fatalf("Expected 404 but got %d", resp.StatusCode())
+	}
+	ct := string(resp.Header.ContentType())
+	if ct != "application/json" {
+		t.Fatalf("Expected content type application/json but got %s", ct)
+	}
+	if !bytes.Equal(resp.Body(), ERROR_IMAGE_NOT_FOUND) {
+		t.Fatalf("Unexpected body: %s", string(resp.Body()))
+	}
+}
+
+func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
+	handler := getHandler()
+	defer os.RemoveAll(handler.Config.DATA_DIR)
+	uploadReq := createUploadRequest(
+		"POST", TOKEN,
+		"image_file", TEST_FILE_JPEG,
+	)
+	uploadResp := serve(handler.handleRequests, uploadReq)
+
+	if uploadResp.Header.StatusCode() != 200 {
+		t.Fatalf("Expected upload status 200 but got %d",
+			uploadResp.Header.StatusCode())
+	}
+	uploadResult := &UploadResult{}
+	err := json.Unmarshal(uploadResp.Body(), uploadResult)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fetchUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageId)
+	fetchReq := createRequest(fetchUri, "GET", nil, nil)
+	imageParams, _ := GetImageParamsFromRequest(&fetchReq.Header, handler.Config)
+	_, cachePath := imageParams.GetCachePath(handler.Config.DATA_DIR)
+	_, imagePath := ImageIdToFilePath(handler.Config.DATA_DIR, uploadResult.ImageId)
+
+	serve(handler.handleRequests, fetchReq)
+	buf, err := bimg.Read(cachePath)
+	if err != nil {
+		t.Fatalf("Couldn't read the cache")
+	}
+	img := bimg.NewImage(buf)
+	size, _ := img.Size()
+	if size.Width != 500 || size.Height != 500 {
+		t.Fatal("Cache is invalid")
+	}
+	if os.Remove(imagePath) != nil {
+		t.Fatal("Couldn't remove image")
+	}
+	resp := serve(handler.handleRequests, fetchReq)
+	if resp.StatusCode() != 200 {
+		t.Fatal("Server didn't read the cache")
+	}
+
 }
