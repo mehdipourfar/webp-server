@@ -10,6 +10,7 @@ import (
 	"github.com/teris-io/shortid"
 	"github.com/valyala/fasthttp"
 	bimg "gopkg.in/h2non/bimg.v1"
+	"regexp"
 )
 
 type Handler struct {
@@ -26,6 +27,7 @@ var (
 	PATH_HEALTH = []byte("/health/")
 	PATH_UPLOAD = []byte("/upload/")
 	PATH_IMAGE  = []byte("/image/")
+	PATH_DELETE = []byte("/delete/")
 
 	ERROR_METHOD_NOT_ALLOWED = []byte(`{"error": "Method not allowed"}`)
 	ERROR_IMAGE_NOT_PROVIDED = []byte(`{"error": "image_file field not provided"}`)
@@ -35,12 +37,16 @@ var (
 	ERROR_IMAGE_NOT_FOUND    = []byte(`{"error": "Image not found"}`)
 	ERROR_ADDRESS_NOT_FOUND  = []byte(`{"error": "Address not found"}`)
 	ERROR_SERVER             = []byte(`{"error": "Internal Server Error"}`)
+
+	DELETE_URI_REGEX = regexp.MustCompile("/delete/(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
 )
 
 func jsonResponse(ctx *fasthttp.RequestCtx, status int, body []byte) {
 	ctx.SetStatusCode(status)
 	ctx.SetContentType(CT_JSON)
-	ctx.SetBody(body)
+	if body != nil {
+		ctx.SetBody(body)
+	}
 }
 
 // In case of ocurring any panic in code, this function will serve
@@ -63,8 +69,11 @@ func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
 		handler.handleFetch(ctx)
 	} else if bytes.Equal(path, PATH_UPLOAD) {
 		handler.handleUpload(ctx)
+	} else if bytes.HasPrefix(path, PATH_DELETE) {
+		handler.handleDelete(ctx)
 	} else if bytes.Equal(path, PATH_HEALTH) {
 		jsonResponse(ctx, 200, []byte(`{"status": "ok"}`))
+
 	} else {
 		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
 	}
@@ -167,4 +176,36 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		ctx.SetContentType(CT_GIF)
 	}
 	ctx.SetBody(convertedImage)
+}
+
+func (handler *Handler) handleDelete(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsDelete() {
+		jsonResponse(ctx, 405, ERROR_METHOD_NOT_ALLOWED)
+		return
+	}
+
+	if len(handler.Config.TOKEN) != 0 &&
+		handler.Config.TOKEN != string(ctx.Request.Header.Peek("Token")) {
+		jsonResponse(ctx, 401, ERROR_INVALID_TOKEN)
+		return
+	}
+
+	match := DELETE_URI_REGEX.FindSubmatch(ctx.Path())
+	if len(match) != 2 {
+		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
+		return
+	}
+	imageId := string(match[1])
+	_, imagePath := ImageIdToFilePath(handler.Config.DATA_DIR, imageId)
+
+	err := os.Remove(imagePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
+			return
+		}
+		panic(err)
+	}
+	jsonResponse(ctx, 204, nil)
+	return
 }

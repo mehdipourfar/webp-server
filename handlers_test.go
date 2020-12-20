@@ -521,3 +521,100 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 	}
 
 }
+
+func TestDeleteHandler(t *testing.T) {
+	handler := getHandler()
+	defer os.RemoveAll(handler.Config.DATA_DIR)
+	uploadReq := createUploadRequest(
+		"POST", TOKEN,
+		"image_file", TEST_FILE_JPEG,
+	)
+	uploadResp := serve(handler.handleRequests, uploadReq)
+
+	if uploadResp.Header.StatusCode() != 200 {
+		t.Fatalf("Expected upload status 200 but got %d",
+			uploadResp.Header.StatusCode())
+	}
+	uploadResult := &UploadResult{}
+	err := json.Unmarshal(uploadResp.Body(), uploadResult)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tt := []struct {
+		name           string
+		method         string
+		imageId        string
+		token          []byte
+		expectedStatus int
+		expectedBody   []byte
+	}{
+		{
+			name:           "Invalid Method",
+			method:         "GET",
+			imageId:        "123456789",
+			token:          nil,
+			expectedStatus: 405,
+			expectedBody:   ERROR_METHOD_NOT_ALLOWED,
+		},
+		{
+			name:           "Invalid Address",
+			method:         "DELETE",
+			imageId:        "123456789",
+			token:          nil,
+			expectedStatus: 401,
+			expectedBody:   ERROR_INVALID_TOKEN,
+		},
+		{
+			name:           "Invalid Address",
+			method:         "DELETE",
+			imageId:        "123456789/123",
+			token:          TOKEN,
+			expectedStatus: 404,
+			expectedBody:   ERROR_ADDRESS_NOT_FOUND,
+		},
+		{
+			name:           "Invalid Image",
+			method:         "DELETE",
+			imageId:        "123456789",
+			token:          TOKEN,
+			expectedStatus: 404,
+			expectedBody:   ERROR_IMAGE_NOT_FOUND,
+		},
+		{
+			name:           "Invalid Image",
+			method:         "DELETE",
+			imageId:        uploadResult.ImageId,
+			token:          TOKEN,
+			expectedStatus: 204,
+			expectedBody:   nil,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(fmt.Sprintf("Test upload errors %s", tc.name), func(t *testing.T) {
+			uri := fmt.Sprintf("http://test/delete/%s", tc.imageId)
+			req := createRequest(uri, tc.method, tc.token, nil)
+			resp := serve(handler.handleRequests, req)
+			status := resp.StatusCode()
+			if status != tc.expectedStatus {
+				t.Fatalf("Expected %d but got %d", tc.expectedStatus, status)
+			}
+			ct := string(resp.Header.ContentType())
+			if ct != "application/json" {
+				t.Fatalf("Expected content type to be application/json but is %s", ct)
+			}
+			body := resp.Body()
+			if !bytes.Equal(body, tc.expectedBody) {
+				t.Fatalf("Expected %s as body but got %s",
+					string(tc.expectedBody), string(body))
+			}
+		})
+	}
+
+	_, imagePath := ImageIdToFilePath(handler.Config.DATA_DIR, uploadResult.ImageId)
+	if _, err := os.Stat(imagePath); !os.IsNotExist(err) {
+		t.Fatal("Expected image to be deleted")
+	}
+
+}

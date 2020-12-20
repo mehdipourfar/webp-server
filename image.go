@@ -30,7 +30,7 @@ const (
 )
 
 var (
-	IMAGE_URI_REGEX = regexp.MustCompile("/image/(?P<filterParams>[0-9a-z,=-]+)/(?P<imageId>[0-9a-zA-Z_-]+)")
+	IMAGE_URI_REGEX = regexp.MustCompile("/image/(?P<filterParams>[0-9a-z,=-]+)/(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
 )
 
 type ImageParams struct {
