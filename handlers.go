@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"syscall"
-	"time"
 
 	"github.com/teris-io/shortid"
 	"github.com/valyala/fasthttp"
@@ -72,10 +70,6 @@ func serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, checkExists bo
 		ctx.Response.ResetBody()
 	}
 
-	fi, _ := os.Stat(filePath)
-	stat := fi.Sys().(*syscall.Stat_t)
-	atime := time.Unix(int64(stat.Atim.Sec), int64(stat.Atim.Nsec))
-	fmt.Println(filePath, atime)
 	return ok
 }
 

@@ -216,7 +216,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			options:        "w==",
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
-			err:            fmt.Errorf("Invalidn param: w=="),
+			err:            fmt.Errorf("Invalid param: w=="),
 		},
 		{
 			testId:         13,

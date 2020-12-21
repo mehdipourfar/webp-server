@@ -1,4 +1,4 @@
-# webp-Server
+# webp-server
 A dynamic image resizer and format convertor server built on top of
 [bimg](https://github.com/h2non/bimg) and [fasthttp](https://github.com/valyala/fasthttp)
 
@@ -16,7 +16,7 @@ and get them in appropriate size and format.
 Here is an example request url for an image cropped to 500x500 size.
 
 ```code
-http://example.com/image/w=500,h=500,fit=cover,format=auto/(image_id)
+http://example.com/image/w=500,h=500/(image_id)
 ```
 
 ### What is the benfit of webp format?
