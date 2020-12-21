@@ -1,4 +1,7 @@
 # webp-server
+
+UNDER DEVELOPMENT
+
 A dynamic image resizer and format convertor server built on top of
 [bimg](https://github.com/h2non/bimg) and [fasthttp](https://github.com/valyala/fasthttp)
 
