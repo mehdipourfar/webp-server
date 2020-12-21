@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"syscall"
+	"time"
 
 	"github.com/teris-io/shortid"
 	"github.com/valyala/fasthttp"
@@ -69,6 +71,11 @@ func serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, checkExists bo
 	if !ok {
 		ctx.Response.ResetBody()
 	}
+
+	fi, _ := os.Stat(filePath)
+	stat := fi.Sys().(*syscall.Stat_t)
+	atime := time.Unix(int64(stat.Atim.Sec), int64(stat.Atim.Nsec))
+	fmt.Println(filePath, atime)
 	return ok
 }
 
@@ -105,10 +112,17 @@ func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
 		handler.handleDelete(ctx)
 	} else if bytes.Equal(path, PATH_HEALTH) {
 		jsonResponse(ctx, 200, []byte(`{"status": "ok"}`))
-
 	} else {
 		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
 	}
+}
+
+func (handler *Handler) tokenIsValid(ctx *fasthttp.RequestCtx) bool {
+	if len(handler.Config.TOKEN) != 0 &&
+		handler.Config.TOKEN != string(ctx.Request.Header.Peek("Token")) {
+		return false
+	}
+	return true
 }
 
 func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
@@ -117,8 +131,7 @@ func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if len(handler.Config.TOKEN) != 0 &&
-		handler.Config.TOKEN != string(ctx.Request.Header.Peek("Token")) {
+	if !handler.tokenIsValid(ctx) {
 		jsonResponse(ctx, 401, ERROR_INVALID_TOKEN)
 		return
 	}
@@ -151,7 +164,6 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		jsonResponse(ctx, 405, ERROR_METHOD_NOT_ALLOWED)
 		return
 	}
-
 	options, imageId := parseImageUri(ctx.Path())
 	if imageId == "" {
 		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
@@ -223,8 +235,7 @@ func (handler *Handler) handleDelete(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if len(handler.Config.TOKEN) != 0 &&
-		handler.Config.TOKEN != string(ctx.Request.Header.Peek("Token")) {
+	if !handler.tokenIsValid(ctx) {
 		jsonResponse(ctx, 401, ERROR_INVALID_TOKEN)
 		return
 	}

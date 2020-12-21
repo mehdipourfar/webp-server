@@ -1,12 +1,12 @@
 [Unit]
-Description=xerox daemon
+Description=webp-server daemon
 After=network.target
 
 [Service]
 User=www-data
 Group=www-data
-EnvironmentFile=/etc/default/xerox
-PIDFile=/run/xerox/xerox.pid
+EnvironmentFile=/etc/default/webp-server
+PIDFile=/run/webp-server/webp-server.pid
 KillMode=process
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s TERM $MAINPID
@@ -15,9 +15,9 @@ PrivateTmp=true
 Type=simple
 Restart=always
 
-ExecStart=/usr/bin/xerox
-ExecStartPre=-/bin/mkdir -p /run/xerox/
-ExecStartPre=/bin/chown -R www-data:www-data /run/xerox/
+ExecStart=/usr/bin/webp-server
+ExecStartPre=-/bin/mkdir -p /run/webp-server/
+ExecStartPre=/bin/chown -R www-data:www-data /run/webp-server/
 
 [Install]
 WantedBy=multi-user.target

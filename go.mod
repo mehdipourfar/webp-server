@@ -1,4 +1,4 @@
-module github.com/mehdipourfar/xerox
+module github.com/mehdipourfar/webp-server
 
 go 1.15
 

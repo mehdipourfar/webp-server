@@ -7,9 +7,9 @@ RUN apk add vips-dev fftw-dev build-base --no-cache \
         --repository https://dl-3.alpinelinux.org/alpine/edge/testing/ \
         --repository https://dl-3.alpinelinux.org/alpine/edge/main
 
-WORKDIR /root/xerox
+WORKDIR /root/webp-server
 COPY . .
 RUN GPATH=/root/go GOOS=linux GOARCH=amd64 go install
 
 RUN apk del .build-deps
-CMD ["/root/go/bin/xerox"]
+CMD ["/root/go/bin/webp-server"]

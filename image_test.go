@@ -2,19 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/valyala/fasthttp"
 	bimg "gopkg.in/h2non/bimg.v1"
 	"testing"
 )
-
-func createRequestHeader(uri string, accept_webp bool) *fasthttp.RequestHeader {
-	header := &fasthttp.RequestHeader{}
-	header.SetRequestURI(uri)
-	if accept_webp {
-		header.SetBytesKV([]byte("accept"), []byte("webp"))
-	}
-	return header
-}
 
 func (p1 *ImageParams) IsEqual(p2 *ImageParams) bool {
 	return p1.GetMd5() == p2.GetMd5()
@@ -226,7 +216,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			options:        "w==",
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
-			err:            fmt.Errorf("Invalid param: w=="),
+			err:            fmt.Errorf("Invalidn param: w=="),
 		},
 		{
 			testId:         13,

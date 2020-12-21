@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net"
 	"os"
 	"regexp"
 
@@ -12,11 +11,11 @@ import (
 type Config struct {
 	DATA_DIR              string   `env:"DATA_DIR,required"`
 	DEFAULT_IMAGE_QUALITY int      `env:"IMAGE_QUALITY" envDefault:"95"`
-	SERVER_PORT           int      `env:"SERVER_PORT" envDefault:"8080"`
-	SERVER_ADDR           string   `env:"SERVER_ADDR" envDefault:"127.0.0.1"`
+	SERVER_ADDRESS        string   `env:"SERVER_ADDRESS" envDefault:"127.0.0.1:8080"`
 	TOKEN                 string   `env:"TOKEN" envDefault=""`
 	DEBUG                 bool     `env:"DEBUG"`
 	VALID_SIZES           []string `env:"VALID_SIZES" envSeparator:":"`
+	MAX_REQUEST_BODY_SIZE int      `env:"MAX_REQUEST_BODY_SIZE" envDefault="4"`
 }
 
 func GetConfig() *Config {
@@ -36,9 +35,6 @@ func GetConfig() *Config {
 		if len(match) != 1 {
 			log.Fatalf("Image size %s is not valid. Try use WIDTHxHEIGHT format.", size)
 		}
-	}
-	if net.ParseIP(cfg.SERVER_ADDR) == nil {
-		log.Fatalf("Address %s is not a valid IP.", cfg.SERVER_ADDR)
 	}
 
 	return &cfg
