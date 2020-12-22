@@ -30,9 +30,10 @@ Simple and minimal image server capable of storing, resizing, converting and cac
   They are up to you. You can limit combinations of widths and heights or qualities that you will accept from the client in webp-server configuration and by doing that you will narrow down the type of accepted requests for generating images. In case of serving requests from the cache, powered by `fasthttp`, `webp-server` can be blazingly fast.
 
 * ### Can web clients upload images to webp-server and send the `image_id` to web server?
-  It is strongly recommended not to do this and also not share your webp-server token
-with frontend application for security reasons.
-Frontend should upload image to backend, backend should upload it to wepb-server and store the returning `image_id` in database.
+  It is strongly recommended not to do this and also not share your webp-server token with frontend application for security reasons. Frontend should upload image to backend, backend should upload it to wepb-server and store the returning `image_id` in database.
+
+* ### What is the advantage of using `webp-server` instead of similar projects?
+  It is simple and minimal and has been created to work along the backend applications for serving images of websites in webp format.
 
 ## Installation
 [bimg](https://github.com/h2non/bimg) is a golang program which communicates with libvips through C bindings. Since `webp-server`
@@ -116,7 +117,7 @@ http://example.com/image/w=500,fit=contain/lulRDHbMg
 
 ## Reverse Proxy
 
-webp-server does not support SSL or Domain name validation. It is recommended to use a reverse proxy such as [nginx](https://www.nginx.com/) in front of it. It should only cover frontend APIs. Backend APIs should be called locally. Here is a minimal `nginx` configuration that redirects all the paths which starts with /image/ to webp-server.
+`webp-server` does not support SSL or domain name validation. It is recommended to use a reverse proxy such as [nginx](https://www.nginx.com/) in front of it. It should only cover frontend APIs. Backend APIs should be called locally. Here is a minimal `nginx` configuration that redirects all the paths which starts with /image/ to webp-server.
 
 ``` nginx
 
