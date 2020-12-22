@@ -80,19 +80,19 @@ accepted from users as quality option.
 
 
 ## Backend APIs
-* `/upload/  [Method: POST]`: Accepts image in multipart/form-data file format with name of `image_file`. You should also pass the token which you have set in your configuration file as a header in request. All responses are in `json` format. If request is successful, you will get 200 status code with such body: `{"image_id": "lulRDHbMg"}`. Image id length can vary from 9 to 12. Otherwise, depending on the problem, you will get an 4xx or 5xx status code with such body `{"error": "Error occured because of ..."}`.
+* `/upload/  [Method: POST]`: Accepts image in multipart/form-data format with field name of `image_file`. You should also pass the token previously set in your configuration file as header. All responses are in JSON format. If request is successful, you will get 200 status code with such body: `{"image_id": "lulRDHbMg"}` (Note that `image_id` length can vary from 9 to 12). Otherwise, depending on error, you will get a `4xx` for `5xx` status code with body like this: `{"error": "reason of error"}`.
 
-    ```sh
+    Example: ```sh
     curl -H 'Token: 456e910f-3d07-470d-a862-1deb1494a38e' -X POST -F 'image_file=@/path/to/image.png' http://127.0.0.1:8080/upload/
     ```
 
-* `/delete/(image_id)  [Method: DELETE]`: Accepts `image_id` as url parameter. If the image is deleted without a problem, server will return 204 status code with an empty body. Otherwise, it will return 4xx or 5xx error with specific error message in json format.
+* `/delete/(image_id)  [Method: DELETE]`: Accepts `image_id` as url parameter. If the image is deleted without a problem, server will return 204 status code with an empty body. Otherwise, it will return `4xx` or `5xx` error error message in json format.
 
-    ```sh
+    Example: ```sh
     curl -H 'Token: 456e910f-3d07-470d-a862-1deb1494a38e' -X DELETE "http://localhost:8080/delete/lulRDHbMg";
     ```
 
-* `/health/  [Method: GET]`: It returns 200 status code if server is up and running and needs no header. It can be used by container managers to check the status of a container.
+* `/health/  [Method: GET]`: It returns `200` status code if server is up and running and needs no token in header. It can be used by container managers to check the status of a container.
 
 
 ## Frontend APIs
