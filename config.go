@@ -16,6 +16,7 @@ type Config struct {
 	ServerAddress        string   `yaml:"server_address"`
 	Token                string   `yaml:"token"`
 	ValidImageSizes      []string `yaml:"valid_image_sizes"`
+	ValidImageQualities  []int    `yaml:"valid_image_qualities"`
 	MaxUploadedImageSize int      `yaml:"max_uploaded_image_size"` // in megabytes
 }
 

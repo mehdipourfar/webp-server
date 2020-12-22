@@ -39,3 +39,12 @@ func ValidateImageSize(width int, height int, config *Config) bool {
 	}
 	return false
 }
+
+func ValidateImageQuality(quality int, config *Config) bool {
+	for _, val := range config.ValidImageQualities {
+		if val == quality {
+			return true
+		}
+	}
+	return false
+}

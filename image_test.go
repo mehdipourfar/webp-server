@@ -72,6 +72,7 @@ func TestGetParamsFromUri(t *testing.T) {
 	config := &Config{
 		DataDir:             "/tmp/media/",
 		DefaultImageQuality: 50,
+		ValidImageQualities: []int{50, 90, 95},
 	}
 
 	tt := []struct {
@@ -241,6 +242,30 @@ func TestGetParamsFromUri(t *testing.T) {
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
 			err:            fmt.Errorf("Invalid filter key: k"),
+		},
+		{
+			testId:       16,
+			imageId:      "NG4uQBa2f",
+			options:      "q=95",
+			webpAccepted: true,
+			expectedParams: &ImageParams{
+				ImageId:      "NG4uQBa2f",
+				Fit:          "contain",
+				Format:       "auto",
+				Width:        0,
+				Height:       0,
+				Quality:      95,
+				WebpAccepted: true,
+			},
+			err: nil,
+		},
+		{
+			testId:         17,
+			imageId:        "NG4uQBa2f",
+			options:        "q=60",
+			webpAccepted:   true,
+			expectedParams: &ImageParams{},
+			err:            fmt.Errorf("Unsupported quality."),
 		},
 	}
 

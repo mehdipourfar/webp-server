@@ -70,6 +70,16 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 			default:
 				return nil, fmt.Errorf("Supported fits are cover, contain and scale-down")
 			}
+		case "quality", "q":
+			quality, err := strconv.Atoi(val)
+			if err != nil {
+				return nil, fmt.Errorf("Quality should be integer")
+			}
+			if !ValidateImageQuality(quality, config) {
+				return nil, fmt.Errorf("Unsupported quality.")
+			} else {
+				params.Quality = quality
+			}
 		case "format", "f":
 			switch val {
 			case FORMAT_WEBP, FORMAT_JPEG, FORMAT_AUTO, FORMAT_ORIGINAL:

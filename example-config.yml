@@ -9,5 +9,9 @@ token:
 valid_image_sizes:
   - 300x300
   - 500x500
+valid_image_qualities:
+  - 90
+  - 95
+  - 100
 max_uploaded_image_size:
   4 # in megabytes

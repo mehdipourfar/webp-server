@@ -21,6 +21,10 @@ valid_image_sizes:
   - 200x200
   - 500x500
   - 600x600
+valid_image_qualities:
+  - 90
+  - 95
+  - 100
 max_uploaded_image_size:
   3
 `)
@@ -31,6 +35,7 @@ max_uploaded_image_size:
 		ServerAddress:        "127.0.0.1:9000",
 		Token:                "abcdefg",
 		ValidImageSizes:      []string{"200x200", "500x500", "600x600"},
+		ValidImageQualities:  []int{90, 95, 100},
 		MaxUploadedImageSize: 3,
 	}
 
