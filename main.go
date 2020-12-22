@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/valyala/fasthttp"
 	"log"
 	"os"
@@ -9,12 +10,12 @@ import (
 
 func runServer(config *Config) {
 	handler := &Handler{Config: config}
-	addr := config.SERVER_ADDRESS
+	addr := config.ServerAddress
 	log.Printf("Starting server on %s", addr)
 	server := &fasthttp.Server{
 		Handler:               handler.handleRequests,
 		NoDefaultServerHeader: true,
-		MaxRequestBodySize:    config.MAX_REQUEST_BODY_SIZE * 1024 * 1024,
+		MaxRequestBodySize:    config.MaxRequestBodySize * 1024 * 1024,
 	}
 	var err error
 
@@ -29,6 +30,12 @@ func runServer(config *Config) {
 }
 
 func main() {
-	config := GetConfig()
+	configPath := flag.String("config", "", "Path of config file in yml format")
+	flag.Parse()
+	if *configPath == "" {
+		log.Fatal("Set config.yml path via -config flag.")
+	}
+	config := ParseConfig(*configPath)
+	log.Printf("%+v", config)
 	runServer(config)
 }

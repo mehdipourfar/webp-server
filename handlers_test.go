@@ -115,9 +115,9 @@ func getHandler() *Handler {
 		panic(err)
 	}
 	config := &Config{
-		DATA_DIR:    dir,
-		TOKEN:       string(TOKEN),
-		VALID_SIZES: []string{"500x200", "500x500", "100x100"},
+		DataDir:         dir,
+		Token:           string(TOKEN),
+		ValidImageSizes: []string{"500x200", "500x500", "100x100"},
 	}
 	handler := &Handler{
 		Config: config,
@@ -145,7 +145,7 @@ func TestHealthFunc(t *testing.T) {
 
 func TestUploadFunc(t *testing.T) {
 	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DATA_DIR)
+	defer os.RemoveAll(handler.Config.DataDir)
 
 	tt := []struct {
 		name           string
@@ -256,7 +256,7 @@ func TestUploadFunc(t *testing.T) {
 
 func TestFetchFunc(t *testing.T) {
 	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DATA_DIR)
+	defer os.RemoveAll(handler.Config.DataDir)
 	tt := []struct {
 		name           string
 		uploadFilePath string
@@ -470,7 +470,7 @@ func Test404(t *testing.T) {
 
 func TestFetchFuncMethodShouldBeGet(t *testing.T) {
 	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DATA_DIR)
+	defer os.RemoveAll(handler.Config.DataDir)
 	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "POST", nil, nil)
 	resp := serve(handler.handleRequests, req)
 	if resp.StatusCode() != 405 {
@@ -480,7 +480,7 @@ func TestFetchFuncMethodShouldBeGet(t *testing.T) {
 
 func TestFetchFuncWithInvalidImageId(t *testing.T) {
 	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DATA_DIR)
+	defer os.RemoveAll(handler.Config.DataDir)
 	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "GET", nil, nil)
 	resp := serve(handler.handleRequests, req)
 	if resp.StatusCode() != 404 {
@@ -497,7 +497,7 @@ func TestFetchFuncWithInvalidImageId(t *testing.T) {
 
 func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DATA_DIR)
+	defer os.RemoveAll(handler.Config.DataDir)
 	uploadReq := createUploadRequest(
 		"POST", TOKEN,
 		"image_file", TEST_FILE_JPEG,
@@ -519,12 +519,12 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 		ImageId: uploadResult.ImageId,
 		Width:   500,
 		Height:  500,
-		Quality: handler.Config.DEFAULT_IMAGE_QUALITY,
+		Quality: handler.Config.DefaultImageQuality,
 		Fit:     FIT_COVER,
 		Format:  FORMAT_AUTO,
 	}
-	_, cachePath := imageParams.GetCachePath(handler.Config.DATA_DIR)
-	_, imagePath := ImageIdToFilePath(handler.Config.DATA_DIR, uploadResult.ImageId)
+	_, cachePath := imageParams.GetCachePath(handler.Config.DataDir)
+	_, imagePath := ImageIdToFilePath(handler.Config.DataDir, uploadResult.ImageId)
 
 	serve(handler.handleRequests, fetchReq)
 	buf, err := bimg.Read(cachePath)
@@ -548,7 +548,7 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 
 func TestDeleteHandler(t *testing.T) {
 	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DATA_DIR)
+	defer os.RemoveAll(handler.Config.DataDir)
 	uploadReq := createUploadRequest(
 		"POST", TOKEN,
 		"image_file", TEST_FILE_JPEG,
@@ -643,7 +643,7 @@ func TestDeleteHandler(t *testing.T) {
 		})
 	}
 
-	_, imagePath := ImageIdToFilePath(handler.Config.DATA_DIR, uploadResult.ImageId)
+	_, imagePath := ImageIdToFilePath(handler.Config.DataDir, uploadResult.ImageId)
 	if _, err := os.Stat(imagePath); !os.IsNotExist(err) {
 		t.Fatal("Expected image to be deleted")
 	}
@@ -652,7 +652,7 @@ func TestDeleteHandler(t *testing.T) {
 
 func TestGettingOriginalImage(t *testing.T) {
 	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DATA_DIR)
+	defer os.RemoveAll(handler.Config.DataDir)
 	uploadReq := createUploadRequest(
 		"POST", TOKEN,
 		"image_file", TEST_FILE_PNG,

@@ -41,7 +41,7 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 		ImageId:      imageId,
 		Fit:          FIT_CONTAIN,
 		Format:       FORMAT_AUTO,
-		Quality:      config.DEFAULT_IMAGE_QUALITY,
+		Quality:      config.DefaultImageQuality,
 		WebpAccepted: webpAccepted,
 	}
 

@@ -1,41 +1,52 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
 
-	"github.com/caarlos0/env"
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	DATA_DIR              string   `env:"DATA_DIR,required"`
-	DEFAULT_IMAGE_QUALITY int      `env:"IMAGE_QUALITY" envDefault:"95"`
-	SERVER_ADDRESS        string   `env:"SERVER_ADDRESS" envDefault:"127.0.0.1:8080"`
-	TOKEN                 string   `env:"TOKEN" envDefault=""`
-	DEBUG                 bool     `env:"DEBUG"`
-	VALID_SIZES           []string `env:"VALID_SIZES" envSeparator:":"`
-	MAX_REQUEST_BODY_SIZE int      `env:"MAX_REQUEST_BODY_SIZE" envDefault="4"`
+	DataDir             string   `yaml:"data_directory"`
+	DefaultImageQuality int      `yaml:"default_image_quality"`
+	ServerAddress       string   `yaml:"server_address"`
+	Token               string   `yaml:"token"`
+	ValidImageSizes     []string `yaml:"valid_image_sizes"`
+	MaxRequestBodySize  int      `yaml:"max_request_body_size"` // in megabytes
 }
 
-func GetConfig() *Config {
-	var err error
-	cfg := Config{}
-
-	if err = env.Parse(&cfg); err != nil {
-		log.Fatalf("%+v\n", err)
+func ParseConfig(path string) *Config {
+	cfg := Config{
+		DefaultImageQuality: 95,
+		ServerAddress:       "127.0.0.1:8080",
+		ValidImageSizes:     []string{"300x300", "500x500"},
+		MaxRequestBodySize:  4,
 	}
 
-	if err = os.MkdirAll(cfg.DATA_DIR, 0755); err != nil {
+	buf, err := ioutil.ReadFile(path)
+	if err != nil {
 		log.Fatalf("%+v\n", err)
 	}
-	sizePattern := regexp.MustCompile("([0-9]{2,4})x([0-9]{2,4})")
-	for _, size := range cfg.VALID_SIZES {
+	if err := yaml.Unmarshal(buf, &cfg); err != nil {
+		log.Fatalf("Invalid Config File: %v\n", err)
+	}
+
+	if cfg.DataDir == "" {
+		log.Fatalf("Set data_directory in your config file.")
+	}
+
+	if err := os.MkdirAll(cfg.DataDir, 0755); err != nil {
+		log.Fatalf("%+v\n", err)
+	}
+	sizePattern := regexp.MustCompile("([0-9]{1,4})x([0-9]{1,4})")
+	for _, size := range cfg.ValidImageSizes {
 		match := sizePattern.FindAllString(size, -1)
 		if len(match) != 1 {
 			log.Fatalf("Image size %s is not valid. Try use WIDTHxHEIGHT format.", size)
 		}
 	}
-
 	return &cfg
 }

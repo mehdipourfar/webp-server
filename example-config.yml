@@ -1,0 +1,13 @@
+data_directory:
+  /opt/webp-server/
+default_image_quality:
+  95
+server_address:
+  127.0.0.1:8080
+token:
+  456e910f-3d07-470d-a862-1deb1494a38e # change it
+valid_image_sizes:
+  - 300x300
+  - 500x500
+max_request_body_size:
+  4 # in megabytes

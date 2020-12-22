@@ -32,7 +32,7 @@ func ValidateImage(header *multipart.FileHeader) bool {
 
 func ValidateImageSize(width int, height int, config *Config) bool {
 	s := fmt.Sprintf("%dx%d", width, height)
-	for _, size := range config.VALID_SIZES {
+	for _, size := range config.ValidImageSizes {
 		if size == s {
 			return true
 		}

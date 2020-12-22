@@ -53,7 +53,21 @@ with frontend application for security reasons.
 
 
 ## Installation
+[bimg](https://github.com/h2non/bimg) is a golang program which
+communicates with libvips through C bindings. Since webp-server
+uses bimg for image conversion, you need to install `libvips-dev` as
+a dependency.
+
 
 ```code
 sudo apt install libvips-dev
 ```
+
+```code
+go get -u github.com/mehdipourfar/webp-server
+
+```
+
+
+## Configuration
+webp-server reads it's config from environment variables.

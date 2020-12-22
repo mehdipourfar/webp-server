@@ -112,8 +112,8 @@ func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
 }
 
 func (handler *Handler) tokenIsValid(ctx *fasthttp.RequestCtx) bool {
-	if len(handler.Config.TOKEN) != 0 &&
-		handler.Config.TOKEN != string(ctx.Request.Header.Peek("Token")) {
+	if len(handler.Config.Token) != 0 &&
+		handler.Config.Token != string(ctx.Request.Header.Peek("Token")) {
 		return false
 	}
 	return true
@@ -141,7 +141,7 @@ func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	parentDir, filePath := ImageIdToFilePath(handler.Config.DATA_DIR, imageId)
+	parentDir, filePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
 	if err := os.MkdirAll(parentDir, 0755); err != nil {
 		panic(err)
 		return
@@ -166,7 +166,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 
 	if options == "" {
 		// serve original file
-		_, path := ImageIdToFilePath(handler.Config.DATA_DIR, imageId)
+		_, path := ImageIdToFilePath(handler.Config.DataDir, imageId)
 		if ok := serveFileFromDisk(ctx, path, true); !ok {
 			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
 		}
@@ -186,7 +186,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cacheParentDir, cacheFilePath := imageParams.GetCachePath(handler.Config.DATA_DIR)
+	cacheParentDir, cacheFilePath := imageParams.GetCachePath(handler.Config.DataDir)
 	if ok := serveFileFromDisk(ctx, cacheFilePath, true); ok {
 		// request served from cache
 		return
@@ -196,7 +196,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		jsonResponse(ctx, 403, ERROR_INVALID_IMAGE_SIZE)
 		return
 	}
-	_, imageFilePath := ImageIdToFilePath(handler.Config.DATA_DIR, imageParams.ImageId)
+	_, imageFilePath := ImageIdToFilePath(handler.Config.DataDir, imageParams.ImageId)
 
 	imgBuffer, err := bimg.Read(imageFilePath)
 
@@ -240,7 +240,7 @@ func (handler *Handler) handleDelete(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	imageId := string(match[1])
-	_, imagePath := ImageIdToFilePath(handler.Config.DATA_DIR, imageId)
+	_, imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
 
 	err := os.Remove(imagePath)
 	if err != nil {

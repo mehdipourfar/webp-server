@@ -70,8 +70,8 @@ func TestCachePath(t *testing.T) {
 
 func TestGetParamsFromUri(t *testing.T) {
 	config := &Config{
-		DATA_DIR:              "/tmp/media/",
-		DEFAULT_IMAGE_QUALITY: 50,
+		DataDir:             "/tmp/media/",
+		DefaultImageQuality: 50,
 	}
 
 	tt := []struct {
