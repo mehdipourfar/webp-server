@@ -80,49 +80,47 @@ accepted from users as quality option.
 
 
 ## Backend APIs
-* `/upload/  [Method: POST]`: Accepts image in multipart/form-data format with field name of `image_file`. You should also pass the token previously set in your configuration file as header. All responses are in JSON format. If request is successful, you will get 200 status code with such body: `{"image_id": "lulRDHbMg"}` (Note that `image_id` length can vary from 9 to 12). Otherwise, depending on error, you will get a `4xx` for `5xx` status code with body like this: `{"error": "reason of error"}`.
+* `/upload/  [Method: POST]`: Accepts image in multipart/form-data format with field name of `image_file`. You should also pass the `Token` previously set in your configuration file as header. All responses are in JSON format. If request is successful, you will get `200` status code with such body: `{"image_id": "lulRDHbMg"}` (Note that `image_id` length can vary from 9 to 12). Otherwise, depending on the error, you will get `4xx` for `5xx` status code with body like this: `{"error": "reason of error"}`.
 
     Example:
     ```sh
     curl -H 'Token: 456e910f-3d07-470d-a862-1deb1494a38e' -X POST -F 'image_file=@/path/to/image.png' http://127.0.0.1:8080/upload/
     ```
 
-* `/delete/(image_id)  [Method: DELETE]`: Accepts `image_id` as url parameter. If the image is deleted without a problem, server will return 204 status code with an empty body. Otherwise, it will return `4xx` or `5xx` error error message in json format.
+* `/delete/(image_id)  [Method: DELETE]`: Accepts `image_id` as url parameter. If the image is deleted without a problem, server will return `204` status code with an empty body. Otherwise, it will return `4xx` or `5xx` with error message in JSON format.
 
     Example:
     ```sh
     curl -H 'Token: 456e910f-3d07-470d-a862-1deb1494a38e' -X DELETE "http://localhost:8080/delete/lulRDHbMg";
     ```
 
-* `/health/  [Method: GET]`: It returns `200` status code if server is up and running and needs no token in header. It can be used by container managers to check the status of a container.
+* `/health/  [Method: GET]`: It returns `200` status code if server is up and running. It can be used by container managers to check the status of a container.
 
 
 ## Frontend APIs
 * `/image/(image_id)  [Method: GET]`: Returns the image which has been uploaded to webp-server in original size and format.
 
-* `/image/(filter_options)/(image_id)  [Method: GET]`: Returns the filtered image with content type based on `accept` header of the browser. options are as follows. Filter options:
-  * w, width: Width of filtered image.
-  * h, height: height of filtered image.
-  * q, quality: quality of filtered image.
-  * fit: Accepts `contain`, `cover`, `scale-down`.
+* `/image/(filter_options)/(image_id)  [Method: GET]`: Returns the filtered image with content type based on `accept` header of the browser. Filter options can be these parameters:
+  * `w`, `width`: Width of requested image.
+  * `h`, `height`: height of requested image.
+  * `q`, `quality`: quality of requested image.
+  x* `fit`: Accepts `cover`, `contain` and `scale-down` as value.
     * `cover`: Image will be resized to exactly fill the entire area specified by `width` and `height`, and will cropped if necessary.
     * `contain`: Image will be resized (shrunk or enlarged) to be as large as possible within the given `width` or `height` while preserving the aspect ratio.
     * `scale-down`: Image will be shrunk in size to fully fit within the given `width` or `height`, but won’t be enlarged.
 
-```
 Some example image urls:
-
-/image/w=500,h=500/lulRDHbMg
-/image/w=500,h=500,q=95/lulRDHbMg
-/image/w=500,h=500,fit=cover/lulRDHbMg
-/image/w=500,h=500,fit=contain/lulRDHbMg
-/image/w=500,fit=contain/lulRDHbMg
-
+```
+http://example.com/image/w=500,h=500/lulRDHbMg
+http://example.com/image/w=500,h=500,q=95/lulRDHbMg
+http://example.com/image/w=500,h=500,fit=cover/lulRDHbMg
+http://example.com/image/w=500,h=500,fit=contain/lulRDHbMg
+http://example.com/image/w=500,fit=contain/lulRDHbMg
 ```
 
 ## Reverse Proxy
 
-webp-server does not support ssl. It is recommended to use a reverse proxy such as `nginx` for accessing public apis. Here is a minimal setup for nginx that redirects all paths which starts with /image/ to webp-server.
+webp-server does not support SSL or Domain name validation. It is recommended to use a reverse proxy such as [nginx](https://www.nginx.com/) in front of it. It should only cover frontend APIs. Backend APIs should be called locally. Here is a minimal `nginx` configuration that redirects all the paths which starts with /image/ to webp-server.
 
 ``` nginx
 
@@ -132,7 +130,9 @@ upstream webp_server {
 
 server {
 
-   ....
+   ##
+   ##
+
 
    location /image/ {
         proxy_redirect off;
