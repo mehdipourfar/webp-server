@@ -2,7 +2,7 @@
 A dynamic image resizer and format convertor server built on top of
 [bimg](https://github.com/h2non/bimg) and [fasthttp](https://github.com/valyala/fasthttp).
 
-<br/>
+
 ## FAQ
 ### What is webp-server?
 webp-server is a dynamic image resizer and format convertor server. Backend developers need to run this server on their vps machine and send image files from application server to it. It will return an `image_id` which needs to be saved on db.
@@ -37,7 +37,7 @@ It is strongly recommended not to do this and also not share your webp-server to
 with frontend application for security reasons.
 Frontend should upload image to backend, backend should upload it to wepb-server and store returning `image_id` in database.
 
-<br/>
+
 ## Installation
 [bimg](https://github.com/h2non/bimg) is a golang program which communicates with libvips through C bindings. Since webp-server
 uses `bimg` for image conversion, you need to install `libvips-dev` as
@@ -49,13 +49,11 @@ sudo apt install libvips-dev
 go get -u github.com/mehdipourfar/webp-server
 ```
 
-<br/>
 ## Running
 ```sh
 webp-server -config /path/to/config.yml
 ```
 
-<br/>
 ## Configuration
 There is an example configuration file named `example-config.yml` in code directory. Here is the list of parameters that you can configure:
 
@@ -79,5 +77,3 @@ accepted from users as quality option.
 (Narrow down this values to prevent attackers from creating too many cache files for your images.)
 
 * `max_uploaded_image_size`: Maximum size of accepted uploaded images in Megabytes.
-
-<br/>
