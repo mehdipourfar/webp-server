@@ -24,13 +24,13 @@ Simple and minimal image server capable of storing, resizing, converting and cac
 * ### How should client application check if the browser supports WebP?
     There is no need to do anything. When browsers request for an image, they will send an accept header containing supported image formats. `webp-server` will lookup that header to see if the requesting browser supports webp format or not. If not, it will send the image in jpeg format.
 * ### Isn't it resource expensive to convert images on each requests?
-  Yes, it is. For this reason, webp-server will cache each converted image after the first request.
+  Yes, it is. For this reason, `webp-server` will cache each converted image after the first request.
 
 * ### What about security topics such as DOS attack or heavily storage space usage?
-  They are up to you. You can limit combinations of widths and heights or qualities that you will accept from the client in webp-server configuration and by doing that you will narrow down the type of accepted requests for generating images. In case of serving requests from the cache, powered by `fasthttp`, `webp-server` can be blazingly fast.
+  They are up to you. You can limit combinations of widths and heights or qualities that you will accept from the client in `webp-server` configuration and by doing that you will narrow down the type of accepted requests for generating images. In case of serving requests from the cache, powered by `fasthttp`, `webp-server` can be blazingly fast.
 
-* ### Can web clients upload images to webp-server and send the `image_id` to web server?
-  It is strongly recommended not to do this and also not share your webp-server token with frontend application for security reasons. Frontend should upload image to backend, backend should upload it to wepb-server and store the returning `image_id` in database.
+* ### Can web clients upload images to `webp-server` and send the `image_id` to web server?
+  It is strongly recommended not to do this and also not share your `webp-server` token with frontend application for security reasons. Frontend should upload image to backend, backend should upload it to wepb-server and store the returning `image_id` in database.
 
 * ### What is the advantage of using `webp-server` instead of similar projects?
   It is simple and minimal and has been created to work along the backend applications for serving images of websites in webp format.
@@ -64,7 +64,7 @@ You can also set unix socket path for server address (unix:/path/to/socket.sock)
 
 * `token`: The token that your backend application should send in request header for upload and delete operations.
 
-* `default_image_quality`: When converting images, webp-server uses this value for conversion quality in case user omits quality option in request. Default value is 95. By decreasing this value, size and quality of the image will be decreased.
+* `default_image_quality`: When converting images, `webp-server` uses this value for conversion quality in case user omits quality option in request. Default value is 95. By decreasing this value, size and quality of the image will be decreased.
 
 * `valid_image_qualities`: List of integer values from 50 to 100 which will be
 accepted from users as quality option.
@@ -95,7 +95,7 @@ accepted from users as quality option.
 
 
 ## Frontend APIs
-* `/image/(image_id)  [Method: GET]`: Returns the image which has been uploaded to webp-server in original size and format.
+* `/image/(image_id)  [Method: GET]`: Returns the image which has been uploaded to `webp-server` in original size and format.
 
 * `/image/(filter_options)/(image_id)  [Method: GET]`: Returns the filtered image with content type based on `accept` header of the browser. Filter options can be these parameters:
   * `w`, `width`: Width of requested image.
@@ -117,7 +117,7 @@ http://example.com/image/w=500,fit=contain/lulRDHbMg
 
 ## Reverse Proxy
 
-`webp-server` does not support SSL or domain name validation. It is recommended to use a reverse proxy such as [nginx](https://www.nginx.com/) in front of it. It should only cover frontend APIs. Backend APIs should be called locally. Here is a minimal `nginx` configuration that redirects all the paths which starts with /image/ to webp-server.
+`webp-server` does not support SSL or domain name validation. It is recommended to use a reverse proxy such as [nginx](https://www.nginx.com/) in front of it. It should only cover frontend APIs. Backend APIs should be called locally. Here is a minimal `nginx` configuration that redirects all the paths which starts with /image/ to `webp-server`.
 
 ``` nginx
 
