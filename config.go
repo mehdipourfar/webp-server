@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,23 +11,23 @@ import (
 )
 
 type Config struct {
-	DataDir             string   `yaml:"data_directory"`
-	DefaultImageQuality int      `yaml:"default_image_quality"`
-	ServerAddress       string   `yaml:"server_address"`
-	Token               string   `yaml:"token"`
-	ValidImageSizes     []string `yaml:"valid_image_sizes"`
-	MaxRequestBodySize  int      `yaml:"max_request_body_size"` // in megabytes
+	DataDir              string   `yaml:"data_directory"`
+	DefaultImageQuality  int      `yaml:"default_image_quality"`
+	ServerAddress        string   `yaml:"server_address"`
+	Token                string   `yaml:"token"`
+	ValidImageSizes      []string `yaml:"valid_image_sizes"`
+	MaxUploadedImageSize int      `yaml:"max_uploaded_image_size"` // in megabytes
 }
 
-func ParseConfig(path string) *Config {
+func ParseConfig(file io.Reader) *Config {
 	cfg := Config{
-		DefaultImageQuality: 95,
-		ServerAddress:       "127.0.0.1:8080",
-		ValidImageSizes:     []string{"300x300", "500x500"},
-		MaxRequestBodySize:  4,
+		DefaultImageQuality:  95,
+		ServerAddress:        "127.0.0.1:8080",
+		ValidImageSizes:      []string{"300x300", "500x500"},
+		MaxUploadedImageSize: 4,
 	}
 
-	buf, err := ioutil.ReadFile(path)
+	buf, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Fatalf("%+v\n", err)
 	}
@@ -47,6 +48,10 @@ func ParseConfig(path string) *Config {
 		if len(match) != 1 {
 			log.Fatalf("Image size %s is not valid. Try use WIDTHxHEIGHT format.", size)
 		}
+	}
+
+	if cfg.DefaultImageQuality < 50 || cfg.DefaultImageQuality > 100 {
+		log.Fatal("Default image quality should be 50 < q < 100.")
 	}
 	return &cfg
 }

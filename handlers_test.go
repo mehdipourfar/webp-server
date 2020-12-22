@@ -85,12 +85,12 @@ func createUploadRequest(
 	return req
 }
 
-func serve(handler fasthttp.RequestHandler, req *fasthttp.Request) *fasthttp.Response {
+func serve(server *fasthttp.Server, req *fasthttp.Request) *fasthttp.Response {
 	ln := fasthttputil.NewInmemoryListener()
 	defer ln.Close()
 
 	go func() {
-		err := fasthttp.Serve(ln, handler)
+		err := server.Serve(ln)
 		if err != nil {
 			panic(fmt.Errorf("failed to serve: %v", err))
 		}
@@ -109,29 +109,25 @@ func serve(handler fasthttp.RequestHandler, req *fasthttp.Request) *fasthttp.Res
 	return resp
 }
 
-func getHandler() *Handler {
+func getDefaultConfig() *Config {
 	dir, err := ioutil.TempDir("", "test")
 	if err != nil {
 		panic(err)
 	}
-	config := &Config{
+	return &Config{
 		DataDir:         dir,
 		Token:           string(TOKEN),
 		ValidImageSizes: []string{"500x200", "500x500", "100x100"},
 	}
-	handler := &Handler{
-		Config: config,
-	}
-	return handler
 }
 
 func TestHealthFunc(t *testing.T) {
-	handler := &Handler{}
+	server := CreateServer(&Config{})
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI("http://test/health/")
 	defer fasthttp.ReleaseRequest(req)
 
-	resp := serve(handler.handleRequests, req)
+	resp := serve(server, req)
 
 	status := resp.Header.StatusCode()
 	if status != 200 {
@@ -144,8 +140,9 @@ func TestHealthFunc(t *testing.T) {
 }
 
 func TestUploadFunc(t *testing.T) {
-	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DataDir)
+	config := getDefaultConfig()
+	server := CreateServer(config)
+	defer os.RemoveAll(config.DataDir)
 
 	tt := []struct {
 		name           string
@@ -227,7 +224,7 @@ func TestUploadFunc(t *testing.T) {
 				tc.method, tc.token,
 				tc.imageParamName, tc.imagePath,
 			)
-			resp := serve(handler.handleRequests, req)
+			resp := serve(server, req)
 			status := resp.Header.StatusCode()
 			body := resp.Body()
 			if ct := string(resp.Header.ContentType()); ct != "application/json" {
@@ -255,8 +252,9 @@ func TestUploadFunc(t *testing.T) {
 }
 
 func TestFetchFunc(t *testing.T) {
-	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DataDir)
+	config := getDefaultConfig()
+	server := CreateServer(config)
+	defer os.RemoveAll(config.DataDir)
 	tt := []struct {
 		name           string
 		uploadFilePath string
@@ -396,7 +394,7 @@ func TestFetchFunc(t *testing.T) {
 				"POST", TOKEN,
 				"image_file", tc.uploadFilePath,
 			)
-			uploadResp := serve(handler.handleRequests, uploadReq)
+			uploadResp := serve(server, uploadReq)
 
 			if uploadResp.Header.StatusCode() != 200 {
 				t.Fatalf("Expected upload status 200 but got %d",
@@ -412,7 +410,7 @@ func TestFetchFunc(t *testing.T) {
 			if tc.webpAccepted {
 				fetchReq.Header.SetBytesKV([]byte("accept"), []byte("webp"))
 			}
-			fetchResp := serve(handler.handleRequests, fetchReq)
+			fetchResp := serve(server, fetchReq)
 			status := fetchResp.Header.StatusCode()
 			if status != tc.expectedStatus {
 				t.Fatalf("Expected fetch status %d but got %d.",
@@ -452,9 +450,10 @@ func TestFetchFunc(t *testing.T) {
 }
 
 func Test404(t *testing.T) {
-	handler := &Handler{}
+	config := &Config{}
+	server := CreateServer(config)
 	req := createRequest("http://test/hey", "GET", nil, nil)
-	resp := serve(handler.handleRequests, req)
+	resp := serve(server, req)
 	if resp.StatusCode() != 404 {
 		t.Fatalf("Expected 404 but got %d", resp.StatusCode())
 	}
@@ -469,20 +468,22 @@ func Test404(t *testing.T) {
 }
 
 func TestFetchFuncMethodShouldBeGet(t *testing.T) {
-	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DataDir)
+	config := getDefaultConfig()
+	server := CreateServer(config)
+	defer os.RemoveAll(config.DataDir)
 	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "POST", nil, nil)
-	resp := serve(handler.handleRequests, req)
+	resp := serve(server, req)
 	if resp.StatusCode() != 405 {
 		t.Fatalf("Expected 405 but got %d", resp.StatusCode())
 	}
 }
 
 func TestFetchFuncWithInvalidImageId(t *testing.T) {
-	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DataDir)
+	config := getDefaultConfig()
+	server := CreateServer(config)
+	defer os.RemoveAll(config.DataDir)
 	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "GET", nil, nil)
-	resp := serve(handler.handleRequests, req)
+	resp := serve(server, req)
 	if resp.StatusCode() != 404 {
 		t.Fatalf("Expected 404 but got %d", resp.StatusCode())
 	}
@@ -496,13 +497,14 @@ func TestFetchFuncWithInvalidImageId(t *testing.T) {
 }
 
 func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
-	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DataDir)
+	config := getDefaultConfig()
+	server := CreateServer(config)
+	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
 		"POST", TOKEN,
 		"image_file", TEST_FILE_JPEG,
 	)
-	uploadResp := serve(handler.handleRequests, uploadReq)
+	uploadResp := serve(server, uploadReq)
 
 	if uploadResp.Header.StatusCode() != 200 {
 		t.Fatalf("Expected upload status 200 but got %d",
@@ -519,14 +521,14 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 		ImageId: uploadResult.ImageId,
 		Width:   500,
 		Height:  500,
-		Quality: handler.Config.DefaultImageQuality,
+		Quality: config.DefaultImageQuality,
 		Fit:     FIT_COVER,
 		Format:  FORMAT_AUTO,
 	}
-	_, cachePath := imageParams.GetCachePath(handler.Config.DataDir)
-	_, imagePath := ImageIdToFilePath(handler.Config.DataDir, uploadResult.ImageId)
+	_, cachePath := imageParams.GetCachePath(config.DataDir)
+	_, imagePath := ImageIdToFilePath(config.DataDir, uploadResult.ImageId)
 
-	serve(handler.handleRequests, fetchReq)
+	serve(server, fetchReq)
 	buf, err := bimg.Read(cachePath)
 	if err != nil {
 		t.Fatalf("Couldn't read the cache")
@@ -539,7 +541,7 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 	if os.Remove(imagePath) != nil {
 		t.Fatal("Couldn't remove image")
 	}
-	resp := serve(handler.handleRequests, fetchReq)
+	resp := serve(server, fetchReq)
 	if resp.StatusCode() != 200 {
 		t.Fatal("Server didn't read the cache")
 	}
@@ -547,13 +549,14 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 }
 
 func TestDeleteHandler(t *testing.T) {
-	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DataDir)
+	config := getDefaultConfig()
+	server := CreateServer(config)
+	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
 		"POST", TOKEN,
 		"image_file", TEST_FILE_JPEG,
 	)
-	uploadResp := serve(handler.handleRequests, uploadReq)
+	uploadResp := serve(server, uploadReq)
 
 	if uploadResp.Header.StatusCode() != 200 {
 		t.Fatalf("Expected upload status 200 but got %d",
@@ -619,7 +622,7 @@ func TestDeleteHandler(t *testing.T) {
 		t.Run(fmt.Sprintf("Test upload errors %s", tc.name), func(t *testing.T) {
 			uri := fmt.Sprintf("http://test/delete/%s", tc.imageId)
 			req := createRequest(uri, tc.method, tc.token, nil)
-			resp := serve(handler.handleRequests, req)
+			resp := serve(server, req)
 			status := resp.StatusCode()
 			if status != tc.expectedStatus {
 				t.Fatalf("Expected %d but got %d", tc.expectedStatus, status)
@@ -643,7 +646,7 @@ func TestDeleteHandler(t *testing.T) {
 		})
 	}
 
-	_, imagePath := ImageIdToFilePath(handler.Config.DataDir, uploadResult.ImageId)
+	_, imagePath := ImageIdToFilePath(config.DataDir, uploadResult.ImageId)
 	if _, err := os.Stat(imagePath); !os.IsNotExist(err) {
 		t.Fatal("Expected image to be deleted")
 	}
@@ -651,18 +654,20 @@ func TestDeleteHandler(t *testing.T) {
 }
 
 func TestGettingOriginalImage(t *testing.T) {
-	handler := getHandler()
-	defer os.RemoveAll(handler.Config.DataDir)
+	config := getDefaultConfig()
+	server := CreateServer(config)
+
+	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
 		"POST", TOKEN,
 		"image_file", TEST_FILE_PNG,
 	)
 	uploadResult := &UploadResult{}
-	uploadResp := serve(handler.handleRequests, uploadReq)
+	uploadResp := serve(server, uploadReq)
 	json.Unmarshal(uploadResp.Body(), uploadResult)
 	uri := fmt.Sprintf("http://test/image/%s", "123456789")
 	req := createRequest(uri, "GET", nil, nil)
-	resp := serve(handler.handleRequests, req)
+	resp := serve(server, req)
 	if resp.StatusCode() != 404 {
 		t.Fatalf("Expected 404 but got %d", resp.StatusCode())
 	}
@@ -674,7 +679,7 @@ func TestGettingOriginalImage(t *testing.T) {
 	}
 	uri = fmt.Sprintf("http://test/image/%s", uploadResult.ImageId)
 	req = createRequest(uri, "GET", nil, nil)
-	resp = serve(handler.handleRequests, req)
+	resp = serve(server, req)
 	if resp.StatusCode() != 200 {
 		t.Fatalf("Expected 200 but got %d", resp.StatusCode())
 	}

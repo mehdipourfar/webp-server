@@ -2,27 +2,21 @@ package main
 
 import (
 	"flag"
-	"github.com/valyala/fasthttp"
 	"log"
 	"os"
 	"strings"
 )
 
 func runServer(config *Config) {
-	handler := &Handler{Config: config}
-	addr := config.ServerAddress
-	log.Printf("Starting server on %s", addr)
-	server := &fasthttp.Server{
-		Handler:               handler.handleRequests,
-		NoDefaultServerHeader: true,
-		MaxRequestBodySize:    config.MaxRequestBodySize * 1024 * 1024,
-	}
-	var err error
+	server := CreateServer(config)
 
-	if strings.HasPrefix(addr, "unix://") {
-		err = server.ListenAndServeUNIX(addr, os.ModeSocket)
+	log.Printf("Starting server on %s", config.ServerAddress)
+
+	var err error
+	if strings.HasPrefix(config.ServerAddress, "unix://") {
+		err = server.ListenAndServeUNIX(config.ServerAddress, os.ModeSocket)
 	} else {
-		err = server.ListenAndServe(addr)
+		err = server.ListenAndServe(config.ServerAddress)
 	}
 	if err != nil {
 		log.Println(err)
@@ -35,7 +29,12 @@ func main() {
 	if *configPath == "" {
 		log.Fatal("Set config.yml path via -config flag.")
 	}
-	config := ParseConfig(*configPath)
+	file, err := os.Open(*configPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	config := ParseConfig(file)
+	file.Close()
 	log.Printf("%+v", config)
 	runServer(config)
 }

@@ -55,7 +55,7 @@ with frontend application for security reasons.
 ## Installation
 [bimg](https://github.com/h2non/bimg) is a golang program which
 communicates with libvips through C bindings. Since webp-server
-uses bimg for image conversion, you need to install `libvips-dev` as
+uses `bimg` for image conversion, you need to install `libvips-dev` as
 a dependency.
 
 
@@ -68,6 +68,18 @@ go get -u github.com/mehdipourfar/webp-server
 
 ```
 
+## Running
+webp-server -config /path/to/config.yml
 
 ## Configuration
-webp-server reads it's config from environment variables.
+There is an example configuration file named `example-config.yml`
+in code directory. Here is the list of what you can configure:
+
+* data_dir: Data directory in which images and cached images are
+stored. Note that in this directory, there will be two separate directories
+named `images` and `caches`. You can remove `caches` directory at any point
+if you wanted to free your hard disk.
+
+* default_image_quality: When converting images, webp-server uses this value
+for convertion quality. The default value is 95. If you decrease this value,
+image size and quality will be decreased.
