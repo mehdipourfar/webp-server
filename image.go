@@ -19,18 +19,12 @@ const (
 	FIT_COVER      = "cover"
 	FIT_CONTAIN    = "contain"
 	FIT_SCALE_DOWN = "scale-down"
-
-	FORMAT_AUTO     = "auto"
-	FORMAT_ORIGINAL = "original"
-	FORMAT_JPEG     = "jpeg"
-	FORMAT_WEBP     = "webp"
 )
 
 type ImageParams struct {
 	ImageId      string
 	Width        int
 	Height       int
-	Format       string
 	Fit          string
 	Quality      int
 	WebpAccepted bool
@@ -40,7 +34,6 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 	params := &ImageParams{
 		ImageId:      imageId,
 		Fit:          FIT_CONTAIN,
-		Format:       FORMAT_AUTO,
 		Quality:      config.DefaultImageQuality,
 		WebpAccepted: webpAccepted,
 	}
@@ -80,13 +73,6 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 			} else {
 				params.Quality = quality
 			}
-		case "format", "f":
-			switch val {
-			case FORMAT_WEBP, FORMAT_JPEG, FORMAT_AUTO, FORMAT_ORIGINAL:
-				params.Format = val
-			default:
-				return nil, fmt.Errorf("Supported formats are auto, original, webp, jpeg")
-			}
 		default:
 			return nil, fmt.Errorf("Invalid filter key: %s", key)
 		}
@@ -104,11 +90,10 @@ func ImageIdToFilePath(dataDir string, imageId string) (parentDir string, filePa
 
 func (i *ImageParams) GetMd5() string {
 	key := fmt.Sprintf(
-		"%s:%d:%d:%s:%s:%d:%t",
+		"%s:%d:%d:%s:%d:%t",
 		i.ImageId,
 		i.Width,
 		i.Height,
-		i.Format,
 		i.Fit,
 		i.Quality,
 		i.WebpAccepted,
@@ -163,19 +148,10 @@ func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize, imageType bimg.Im
 		}
 	}
 
-	switch params.Format {
-	case FORMAT_AUTO:
-		if params.WebpAccepted {
-			options.Type = bimg.WEBP
-		} else {
-			options.Type = bimg.JPEG
-		}
-	case FORMAT_ORIGINAL:
-		options.Type = imageType
-	case FORMAT_JPEG:
-		options.Type = bimg.JPEG
-	case FORMAT_WEBP:
+	if params.WebpAccepted {
 		options.Type = bimg.WEBP
+	} else {
+		options.Type = bimg.JPEG
 	}
 	return options
 }

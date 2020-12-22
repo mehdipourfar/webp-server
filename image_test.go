@@ -12,8 +12,8 @@ func (p1 *ImageParams) IsEqual(p2 *ImageParams) bool {
 
 func (p *ImageParams) String() string {
 	return fmt.Sprintf(
-		"id:%s,width:%d,height:%d,format:%s,fit:%s,quality:%d,webp_accepted:%t",
-		p.ImageId, p.Width, p.Height, p.Format, p.Fit, p.Quality, p.WebpAccepted,
+		"id:%s,width:%d,height:%d,fit:%s,quality:%d,webp_accepted:%t",
+		p.ImageId, p.Width, p.Height, p.Fit, p.Quality, p.WebpAccepted,
 	)
 }
 
@@ -45,13 +45,12 @@ func TestCachePath(t *testing.T) {
 		ImageId:      "NG4uQBa2f",
 		Width:        100,
 		Height:       100,
-		Format:       "auto",
 		Fit:          "cover",
 		Quality:      90,
 		WebpAccepted: true,
 	}
 
-	expectedKey := "f3a3ecbb2012b714bdbe7d1e21cf012a"
+	expectedKey := "c64dda22268336d2c246899c2bc79005"
 
 	if cacheKey := params.GetMd5(); cacheKey != expectedKey {
 		t.Errorf("Something wrong with md5: %s", cacheKey)
@@ -59,11 +58,11 @@ func TestCachePath(t *testing.T) {
 
 	parentDir, filePath := params.GetCachePath("/tmp/media/")
 
-	if parentDir != "/tmp/media/caches/a/12" {
+	if parentDir != "/tmp/media/caches/5/00" {
 		t.Errorf("Something wrong with cache parentDir: %s", parentDir)
 	}
 
-	if filePath != fmt.Sprintf("/tmp/media/caches/a/12/%s", expectedKey) {
+	if filePath != fmt.Sprintf("/tmp/media/caches/5/00/%s", expectedKey) {
 		t.Errorf("Something wrong with cache file path: %s", filePath)
 	}
 }
@@ -91,7 +90,6 @@ func TestGetParamsFromUri(t *testing.T) {
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "contain",
-				Format:       "auto",
 				Width:        500,
 				Height:       500,
 				Quality:      50,
@@ -107,7 +105,6 @@ func TestGetParamsFromUri(t *testing.T) {
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "contain",
-				Format:       "auto",
 				Width:        300,
 				Height:       300,
 				Quality:      50,
@@ -123,7 +120,6 @@ func TestGetParamsFromUri(t *testing.T) {
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "contain",
-				Format:       "auto",
 				Width:        300,
 				Height:       300,
 				Quality:      50,
@@ -139,23 +135,6 @@ func TestGetParamsFromUri(t *testing.T) {
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "cover",
-				Format:       "auto",
-				Width:        300,
-				Height:       300,
-				Quality:      50,
-				WebpAccepted: true,
-			},
-			err: nil,
-		},
-		{
-			testId:       5,
-			imageId:      "NG4uQBa2f",
-			options:      "w=300,h=300,fit=cover,format=jpeg",
-			webpAccepted: true,
-			expectedParams: &ImageParams{
-				ImageId:      "NG4uQBa2f",
-				Fit:          "cover",
-				Format:       "jpeg",
 				Width:        300,
 				Height:       300,
 				Quality:      50,
@@ -166,12 +145,11 @@ func TestGetParamsFromUri(t *testing.T) {
 		{
 			testId:       7,
 			imageId:      "NG4uQBa2f",
-			options:      "w=300,h=300,fit=scale-down,format=jpeg",
+			options:      "w=300,h=300,fit=scale-down",
 			webpAccepted: true,
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "scale-down",
-				Format:       "jpeg",
 				Width:        300,
 				Height:       300,
 				Quality:      50,
@@ -182,12 +160,11 @@ func TestGetParamsFromUri(t *testing.T) {
 		{
 			testId:       8,
 			imageId:      "NG4uQBa2f",
-			options:      "w=0,h=0,format=auto",
+			options:      "w=0,h=0",
 			webpAccepted: true,
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "contain",
-				Format:       "auto",
 				Width:        0,
 				Height:       0,
 				Quality:      50,
@@ -198,7 +175,7 @@ func TestGetParamsFromUri(t *testing.T) {
 		{
 			testId:         9,
 			imageId:        "NG4uQBa2f",
-			options:        "w=ff,h=0,format=jpeg",
+			options:        "w=ff,h=0",
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
 			err:            fmt.Errorf("Width should be integer"),
@@ -206,7 +183,7 @@ func TestGetParamsFromUri(t *testing.T) {
 		{
 			testId:         10,
 			imageId:        "NG4uQBa2f",
-			options:        "w=300,h=gg,format=jpeg",
+			options:        "w=300,h=gg",
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
 			err:            fmt.Errorf("Height should be integer"),
@@ -228,14 +205,6 @@ func TestGetParamsFromUri(t *testing.T) {
 			err:            fmt.Errorf("Supported fits are cover, contain and scale-down"),
 		},
 		{
-			testId:         14,
-			imageId:        "NG4uQBa2f",
-			options:        "format=gif",
-			webpAccepted:   true,
-			expectedParams: &ImageParams{},
-			err:            fmt.Errorf("Supported formats are auto, original, webp, jpeg"),
-		},
-		{
 			testId:         15,
 			imageId:        "NG4uQBa2f",
 			options:        "k=k",
@@ -251,7 +220,6 @@ func TestGetParamsFromUri(t *testing.T) {
 			expectedParams: &ImageParams{
 				ImageId:      "NG4uQBa2f",
 				Fit:          "contain",
-				Format:       "auto",
 				Width:        0,
 				Height:       0,
 				Quality:      95,
@@ -306,7 +274,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			imageParams: &ImageParams{
 				Width:        300,
 				Height:       300,
-				Format:       "auto",
 				Fit:          "cover",
 				Quality:      80,
 				WebpAccepted: false,
@@ -325,35 +292,10 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "original_image",
-			imageParams: &ImageParams{
-				Width:        300,
-				Height:       300,
-				Format:       "original",
-				Fit:          "cover",
-				Quality:      80,
-				WebpAccepted: false,
-			},
-			imageSize: &bimg.ImageSize{
-				Width:  900,
-				Height: 800,
-			},
-			imageType: bimg.PNG,
-			options: &bimg.Options{
-				Width:  300,
-				Height: 300,
-				Type:   bimg.PNG,
-				Crop:   true,
-				Embed:  true,
-			},
-		},
-
-		{
 			name: "webp_accepted_true",
 			imageParams: &ImageParams{
 				Width:        300,
 				Height:       300,
-				Format:       "auto",
 				Fit:          "cover",
 				Quality:      80,
 				WebpAccepted: true,
@@ -376,7 +318,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			imageParams: &ImageParams{
 				Width:        300,
 				Height:       300,
-				Format:       "auto",
 				Fit:          "cover",
 				Quality:      80,
 				WebpAccepted: true,
@@ -399,7 +340,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			imageParams: &ImageParams{
 				Width:        300,
 				Height:       300,
-				Format:       "auto",
 				Fit:          "cover",
 				Quality:      80,
 				WebpAccepted: true,
@@ -422,7 +362,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			imageParams: &ImageParams{
 				Width:        300,
 				Height:       300,
-				Format:       "auto",
 				Fit:          "contain",
 				Quality:      80,
 				WebpAccepted: true,
@@ -445,7 +384,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			imageParams: &ImageParams{
 				Width:        900,
 				Height:       300,
-				Format:       "auto",
 				Fit:          "contain",
 				Quality:      80,
 				WebpAccepted: true,
@@ -467,7 +405,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			name: "contain_only_height",
 			imageParams: &ImageParams{
 				Height:       300,
-				Format:       "auto",
 				Fit:          "contain",
 				Quality:      80,
 				WebpAccepted: true,
@@ -489,7 +426,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			name: "contain_only_width",
 			imageParams: &ImageParams{
 				Width:        300,
-				Format:       "auto",
 				Fit:          "contain",
 				Quality:      80,
 				WebpAccepted: true,
@@ -510,7 +446,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			name: "scale-down",
 			imageParams: &ImageParams{
 				Width:        1200,
-				Format:       "auto",
 				Fit:          "scale-down",
 				Quality:      80,
 				WebpAccepted: true,
