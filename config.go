@@ -37,12 +37,12 @@ func ParseConfig(file io.Reader) *Config {
 		log.Fatalf("Invalid Config File: %v\n", err)
 	}
 
-	if !filepath.IsAbs(cfg.DataDir) {
-		log.Fatalf("Absolute path for data_dir is needed but got: %s", cfg.DataDir)
-	}
-
 	if cfg.DataDir == "" {
 		log.Fatalf("Set data_directory in your config file.")
+	}
+
+	if !filepath.IsAbs(cfg.DataDir) {
+		log.Fatalf("Absolute path for data_dir is needed but got: %s", cfg.DataDir)
 	}
 
 	if err := os.MkdirAll(cfg.DataDir, 0755); err != nil {
