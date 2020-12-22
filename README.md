@@ -82,13 +82,15 @@ accepted from users as quality option.
 ## Backend APIs
 * `/upload/  [Method: POST]`: Accepts image in multipart/form-data format with field name of `image_file`. You should also pass the token previously set in your configuration file as header. All responses are in JSON format. If request is successful, you will get 200 status code with such body: `{"image_id": "lulRDHbMg"}` (Note that `image_id` length can vary from 9 to 12). Otherwise, depending on error, you will get a `4xx` for `5xx` status code with body like this: `{"error": "reason of error"}`.
 
-    Example: ```sh
+    Example:
+    ```sh
     curl -H 'Token: 456e910f-3d07-470d-a862-1deb1494a38e' -X POST -F 'image_file=@/path/to/image.png' http://127.0.0.1:8080/upload/
     ```
 
 * `/delete/(image_id)  [Method: DELETE]`: Accepts `image_id` as url parameter. If the image is deleted without a problem, server will return 204 status code with an empty body. Otherwise, it will return `4xx` or `5xx` error error message in json format.
 
-    Example: ```sh
+    Example:
+    ```sh
     curl -H 'Token: 456e910f-3d07-470d-a862-1deb1494a38e' -X DELETE "http://localhost:8080/delete/lulRDHbMg";
     ```
 
