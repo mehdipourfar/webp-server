@@ -1,11 +1,14 @@
 # webp-server (UNDER DEVELOPMENT)
 Simple and minimal image server capable of storing, resizing, converting and caching images.
 
+![Flowchart]
+(https://github.com/mehdipourfar/webp-server/raw/master/docs/flowchart.jpg)
+
 
 ## FAQ
 * ### What is webp-server?
-  webp-server is a dynamic image resizer and format convertor server built on top of [bimg](https://github.com/h2non/bimg) and [fasthttp](https://github.com/valyala/fasthttp). Backend developers can run this program on their servers and instead of storing images, upload them to it. It will return an `image_id` which needs to be saved on database by backend application (on a `varchar` field with length of at least 12).
-  By using that `image_id`, web clients can request images from webp-server and get them in the appropriate size and format.
+  `webp-server` is a dynamic image resizer and format convertor server built on top of [bimg](https://github.com/h2non/bimg) and [fasthttp](https://github.com/valyala/fasthttp). Backend developers can run this program on their server machines and upload images to it instead of storing them. It will return an `image_id` which needs to be saved on database by backend application (on a `varchar` field with length of at least 12).
+  By using that `image_id`, web clients can request images from `webp-server` and get them in the appropriate size and format.
 
     Here is an example request url for an image cropped to 500x500 size.
 
@@ -20,21 +23,20 @@ Simple and minimal image server capable of storing, resizing, converting and cac
     Although nowadays most browsers support WebP, lesser than 1% of websites serve their images in this format. That's maybe because converting images to WebP can be complicated and time consuming or developers are not sure if all browsers will support this format.
 
 * ### How should client application check if the browser supports WebP?
-    There is no need to do anything. When browsers request for an image, they will send an accept header containing supported image formats. webp-server will lookup that header to see if the requesting browser supports webp format or not. If not, it will send the image in jpeg format.
+    There is no need to do anything. When browsers request for an image, they will send an accept header containing supported image formats. `webp-server` will lookup that header to see if the requesting browser supports webp format or not. If not, it will send the image in jpeg format.
 * ### Isn't it resource expensive to convert images on each requests?
   Yes, it is. For this reason, webp-server will cache each converted image after the first request.
 
-* ### What about security topics such as DOS attack and heavily storage usage?
-  They are up to you. You can limit combinations of widths and heights or qualities that you will accept from the client in webp-server configuration. In case of serving requests from the cache, powered by `fasthttp`, webp-server is blazingly fast.
+* ### What about security topics such as DOS attack or heavily storage space usage?
+  They are up to you. You can limit combinations of widths and heights or qualities that you will accept from the client in webp-server configuration and by doing that you will narrow down the type of accepted requests for generating images. In case of serving requests from the cache, powered by `fasthttp`, `webp-server` can be blazingly fast.
 
 * ### Can web clients upload images to webp-server and send the `image_id` to web server?
   It is strongly recommended not to do this and also not share your webp-server token
 with frontend application for security reasons.
 Frontend should upload image to backend, backend should upload it to wepb-server and store the returning `image_id` in database.
 
-
 ## Installation
-[bimg](https://github.com/h2non/bimg) is a golang program which communicates with libvips through C bindings. Since webp-server
+[bimg](https://github.com/h2non/bimg) is a golang program which communicates with libvips through C bindings. Since `webp-server`
 uses `bimg` for image conversion, you need to install `libvips-dev` as
 a dependency.
 
@@ -50,7 +52,7 @@ webp-server -config /path/to/config.yml
 ```
 
 ## Configuration
-There is an example configuration file named `example-config.yml` in code directory. Here is the list of parameters that you can configure:
+There is an example configuration file [example-config.yml](https://github.com/mehdipourfar/webp-server/blob/master/example-config.yml) in code directory. Here is the list of parameters that you can configure:
 
 * `data_dir`: Data directory in which images and cached images are
 stored. Note that in this directory, there will be two separate directories
