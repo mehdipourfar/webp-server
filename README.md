@@ -1,7 +1,9 @@
 # webp-server (UNDER DEVELOPMENT)
 A dynamic image resizer and format convertor server built on top of
-[bimg](https://github.com/h2non/bimg) and [fasthttp](https://github.com/valyala/fasthttp)
+[bimg](https://github.com/h2non/bimg) and [fasthttp](https://github.com/valyala/fasthttp).
 
+
+## FAQ
 ### What is webp-server?
 webp-server is a dynamic image resizer and format convertor server. Backend developers need to run this server on their vps machine and send image files from application server to it. It will return an `image_id` which needs to be saved on db.
 By using that `image_id`, web clients can request images from webp-server and get them in appropriate size and format.
