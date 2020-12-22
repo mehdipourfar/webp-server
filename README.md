@@ -4,7 +4,7 @@ Simple and minimal dynamic image resizer and format convertor server built on to
 
 
 ## FAQ
-* What is webp-server?
+* ### What is webp-server?
   webp-server is a dynamic image resizer and format convertor server. Backend developers need to run this server on their vps machine and send image files from application server to it. It will return an `image_id` which needs to be saved on database (on a varchar field with length at least 12).
   By using that `image_id`, web clients can request images from webp-server and get them in appropriate size and format.
 
