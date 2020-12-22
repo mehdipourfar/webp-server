@@ -14,7 +14,7 @@ Simple and minimal dynamic image resizer and format convertor server built on to
     https://example.com/image/w=500,h=500,fit=cover/(image_id)
     ```
 
-* What are the benfits of webp format?
+* ### What are the benfits of webp format?
   According to Google Developers website:
   >  WebP is a modern image format that provides superior lossless and lossy compression for images on the web. Using WebP, webmasters and web developers can create smaller, richer images that make the web faster.
 
@@ -23,15 +23,15 @@ serve their images in this format. That's maybe because converting images to web
 can be complicated and time consuming or developers are not sure if 100% of their
 users` browsers will support this format.
 
-* How should client application check if the browser supports WebP?
+* ### How should client application check if the browser supports WebP?
     There is no need to do anything. When browsers request for an image, they will send an accept header containing supported image formats. webp-server will lookup that header to see if the requesting browser supports webp format or not. If not, it will send the image in jpeg format.
-* Isn't it resource expensive to convert images on each requests?
+* ### Isn't it resource expensive to convert images on each requests?
   Yes, it is. For this reason, webp-server will cache each converted image after the first request.
 
-* What about security topics such as DOS attack and heavily storage usage?
+* ### What about security topics such as DOS attack and heavily storage usage?
   They are up to you. You can limit combinations of widths and heights or qualities that you will accept from the client in webp-server configuration. In case of serving requests from the cache, powered by `fasthttp`, webp-server is blazingly fast.
 
-* Can web clients upload images to webp-server and send the `image_id` to web server?
+* ### Can web clients upload images to webp-server and send the `image_id` to web server?
   It is strongly recommended not to do this and also not share your webp-server token
 with frontend application for security reasons.
 Frontend should upload image to backend, backend should upload it to wepb-server and store the returning `image_id` in database.
