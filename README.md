@@ -1,8 +1,7 @@
 # webp-server (UNDER DEVELOPMENT)
 Simple and minimal image server capable of storing, resizing, converting and caching images.
 
-![Flowchart]
-(https://github.com/mehdipourfar/webp-server/raw/master/docs/flowchart.jpg)
+![Flowchart](https://github.com/mehdipourfar/webp-server/raw/master/docs/flowchart.jpg)
 
 
 ## FAQ
