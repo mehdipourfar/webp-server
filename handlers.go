@@ -33,7 +33,7 @@ var (
 	ERROR_IMAGE_NOT_PROVIDED = []byte(`{"error": "image_file field not provided"}`)
 	ERROR_FILE_IS_NOT_IMAGE  = []byte(`{"error": "Provided file is not an accepted image"}`)
 	ERROR_INVALID_TOKEN      = []byte(`{"error": "Invalid Token"}`)
-	ERROR_INVALID_IMAGE_SIZE = []byte(`{"error": "Invalid image size"}`)
+	ERROR_INVALID_IMAGE_SIZE = []byte(`{"error": "Unsupported image size. Contact server admin."}`)
 	ERROR_IMAGE_NOT_FOUND    = []byte(`{"error": "Image not found"}`)
 	ERROR_ADDRESS_NOT_FOUND  = []byte(`{"error": "Address not found"}`)
 	ERROR_SERVER             = []byte(`{"error": "Internal Server Error"}`)

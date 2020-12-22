@@ -233,7 +233,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			options:        "q=60",
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
-			err:            fmt.Errorf("Unsupported quality."),
+			err:            fmt.Errorf("quality=60 is not supported by server. Contact server admin."),
 		},
 	}
 

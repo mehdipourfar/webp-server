@@ -1,5 +1,5 @@
 data_directory:
-  /opt/webp-server/
+  /opt/webp-server/  # should be an absolute path
 server_address:
   127.0.0.1:8080
 token:

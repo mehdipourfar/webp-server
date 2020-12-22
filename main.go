@@ -13,8 +13,10 @@ func runServer(config *Config) {
 	log.Printf("Starting server on %s", config.ServerAddress)
 
 	var err error
-	if strings.HasPrefix(config.ServerAddress, "unix://") {
-		err = server.ListenAndServeUNIX(config.ServerAddress, os.ModeSocket)
+	if strings.HasPrefix(config.ServerAddress, "unix:") {
+		socketPath := strings.Replace(config.ServerAddress, "unix:", "", -1)
+		defer os.Remove(socketPath)
+		err = server.ListenAndServeUNIX(socketPath, os.ModeSocket|0666)
 	} else {
 		err = server.ListenAndServe(config.ServerAddress)
 	}

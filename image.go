@@ -69,7 +69,7 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 				return nil, fmt.Errorf("Quality should be integer")
 			}
 			if !ValidateImageQuality(quality, config) {
-				return nil, fmt.Errorf("Unsupported quality.")
+				return nil, fmt.Errorf("quality=%d is not supported by server. Contact server admin.", quality)
 			} else {
 				params.Quality = quality
 			}

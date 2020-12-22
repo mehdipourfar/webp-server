@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 
 	"gopkg.in/yaml.v2"
@@ -34,6 +35,10 @@ func ParseConfig(file io.Reader) *Config {
 	}
 	if err := yaml.Unmarshal(buf, &cfg); err != nil {
 		log.Fatalf("Invalid Config File: %v\n", err)
+	}
+
+	if !filepath.IsAbs(cfg.DataDir) {
+		log.Fatalf("Absolute path for data_dir is needed but got: %s", cfg.DataDir)
 	}
 
 	if cfg.DataDir == "" {
