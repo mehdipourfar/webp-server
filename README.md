@@ -33,13 +33,10 @@ Simple and minimal image server capable of storing, resizing, converting and cac
   It is strongly recommended not to do this and also not share your `webp-server` token with frontend application for security reasons. Frontend should upload image to backend, backend should upload it to wepb-server and store the returning `image_id` in database.
 
 * ### What is the advantage of using `webp-server` instead of similar projects?
-  It is simple and minimal and has been created to work along the backend applications for serving images of websites in webp format.
+  It is simple and minimal and has been created to work along the backend applications for serving images of websites in webp format. It does not support all the manipulations that one can do with images. It does a few things and tries to do them perfectly.
 
 ## Installation
-[bimg](https://github.com/h2non/bimg) is a golang program which communicates with libvips through C bindings. Since `webp-server`
-uses `bimg` for image conversion, you need to install `libvips-dev` as
-a dependency.
-
+[bimg](https://github.com/h2non/bimg) is a golang program which communicates with libvips through C bindings. Since `webp-server` uses `bimg` for image conversion, you need to install `libvips-dev` as a dependency.
 
 ```sh
 sudo apt install libvips-dev
