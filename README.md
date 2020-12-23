@@ -19,10 +19,10 @@ Simple and minimal image server capable of storing, resizing, converting and cac
   According to Google Developers website:
   >  WebP is a modern image format that provides superior lossless and lossy compression for images on the web. Using WebP, webmasters and web developers can create smaller, richer images that make the web faster.
 
-    Although nowadays most browsers support WebP, lesser than 1% of websites serve their images in this format. That's maybe because converting images to WebP can be complicated and time consuming or developers are not sure if all browsers will support this format.
+    Although nowadays most web browsers support WebP, less than 1% of websites serve their images in this format. That's maybe because converting images to WebP can be complicated and time consuming or developers are not sure if all browsers will support this format.
 
 * ### How should client application check if the browser supports WebP?
-    There is no need to do anything. When browsers request for an image, they will send an accept header containing supported image formats. `webp-server` will lookup that header to see if the requesting browser supports webp format or not. If not, it will send the image in jpeg format.
+    There is no need to do anything. When browsers request for an image, they will send an accept header containing supported image formats. `webp-server` will lookup that header to see if the browser supports WebP format or not. If not, it will send the image in jpeg format.
 * ### Isn't it resource expensive to convert images on each requests?
   Yes, it is. For this reason, `webp-server` will cache each converted image after the first request.
 
@@ -33,13 +33,17 @@ Simple and minimal image server capable of storing, resizing, converting and cac
   It is strongly recommended not to do this and also not share your `webp-server` token with frontend application for security reasons. Frontend should upload image to backend, backend should upload it to wepb-server and store the returning `image_id` in database.
 
 * ### What is the advantage of using `webp-server` instead of similar projects?
-  It is simple and minimal and has been created to work along the backend applications for serving images of websites in webp format. It does not support all the manipulations that one can do with images. It does a few things and tries to do them perfectly.
+  It is simple and minimal and has been created to work along the backend applications for serving images of websites in WebP format. It does not support all kinds of manipulations that one can do with images. It does a few things and tries to do them perfectly.
 
-## Installation
+## Dependencies
 [bimg](https://github.com/h2non/bimg) is a golang program which communicates with libvips through C bindings. Since `webp-server` uses `bimg` for image conversion, you need to install `libvips-dev` as a dependency.
-
 ```sh
 sudo apt install libvips-dev
+```
+
+
+## Installation
+```sh
 go get -u github.com/mehdipourfar/webp-server
 ```
 
