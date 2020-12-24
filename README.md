@@ -99,12 +99,12 @@ accepted from users as quality option.
 
 * `/image/(filter_options)/(image_id)  [Method: GET]`: Returns the filtered image with content type based on `accept` header of the browser. Filter options can be these parameters:
   * `w`, `width`: Width of requested image.
-  * `h`, `height`: height of requested image.
-  * `q`, `quality`: quality of requested image.
+  * `h`, `height`: Height of requested image.
+  * `q`, `quality`: Quality of requested image. Default value can should be set in the server config.
   x* `fit`: Accepts `cover`, `contain` and `scale-down` as value.
-    * `cover`: Image will be resized to exactly fill the entire area specified by `width` and `height`, and will cropped if necessary.
-    * `contain`: Image will be resized (shrunk or enlarged) to be as large as possible within the given `width` or `height` while preserving the aspect ratio.
+    * `contain`: Image will be resized (shrunk or enlarged) to be as large as possible within the given `width` or `height` while preserving the aspect ratio. This is the default value for fit.
     * `scale-down`: Image will be shrunk in size to fully fit within the given `width` or `height`, but won’t be enlarged.
+    * `cover`: Image will be resized to exactly fill the entire area specified by `width` and `height`, and will cropped if necessary.
 
 Some example image urls:
 ```
