@@ -48,6 +48,7 @@ func ParseConfig(file io.Reader) *Config {
 	if err := os.MkdirAll(cfg.DataDir, 0755); err != nil {
 		log.Fatalf("%+v\n", err)
 	}
+
 	sizePattern := regexp.MustCompile("([0-9]{1,4})x([0-9]{1,4})")
 	for _, size := range cfg.ValidImageSizes {
 		match := sizePattern.FindAllString(size, -1)

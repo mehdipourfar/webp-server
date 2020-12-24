@@ -37,6 +37,5 @@ func main() {
 	}
 	config := ParseConfig(file)
 	file.Close()
-	log.Printf("%+v", config)
 	runServer(config)
 }

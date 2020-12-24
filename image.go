@@ -109,7 +109,7 @@ func (i *ImageParams) GetCachePath(dataDir string) string {
 	return fmt.Sprintf("%s/%s", parentDir, fileName)
 }
 
-func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize, imageType bimg.ImageType) *bimg.Options {
+func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize) *bimg.Options {
 	options := &bimg.Options{
 		Quality: params.Quality,
 	}
@@ -126,9 +126,9 @@ func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize, imageType bimg.Im
 			options.Height = params.Height
 		} else {
 			imageRatio := float32(size.Width) / float32(size.Height)
-			wantedRatio := float32(params.Width) / float32(params.Height)
+			requestRatio := float32(params.Width) / float32(params.Height)
 
-			if wantedRatio < imageRatio {
+			if requestRatio < imageRatio {
 				options.Width = params.Width
 			} else {
 				options.Height = params.Height
@@ -154,14 +154,13 @@ func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize, imageType bimg.Im
 }
 
 func Convert(fileBuffer []byte, params *ImageParams) ([]byte, error) {
-	imageType := bimg.DetermineImageType(fileBuffer)
 	img := bimg.NewImage(fileBuffer)
 	size, err := img.Size()
 	if err != nil {
 		return nil, err
 	}
 
-	options := params.ToBimgOptions(&size, imageType)
+	options := params.ToBimgOptions(&size)
 	newImage, err := img.Process(*options)
 	if err != nil {
 		return nil, err

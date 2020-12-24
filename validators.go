@@ -10,11 +10,11 @@ import (
 
 func ValidateImage(header *multipart.FileHeader) bool {
 	file, err := header.Open()
-	defer file.Close()
 	if err != nil {
 		log.Println(err)
 		return false
 	}
+	defer file.Close()
 	buff := make([]byte, 512)
 	if _, err = file.Read(buff); err != nil {
 		log.Println(err)

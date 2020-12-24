@@ -541,7 +541,7 @@ func TestDeleteHandler(t *testing.T) {
 			expectedBody:   ERROR_IMAGE_NOT_FOUND,
 		},
 		{
-			name:           "Invalid Image",
+			name:           "Valid Image",
 			method:         "DELETE",
 			imageId:        uploadResult.ImageId,
 			token:          TOKEN,
@@ -551,7 +551,7 @@ func TestDeleteHandler(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		t.Run(fmt.Sprintf("Test upload errors %s", tc.name), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Test delete errors %s", tc.name), func(t *testing.T) {
 			uri := fmt.Sprintf("http://test/delete/%s", tc.imageId)
 			req := createRequest(uri, tc.method, tc.token, nil)
 			resp := serve(server, req)

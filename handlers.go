@@ -10,7 +10,6 @@ import (
 
 	"github.com/teris-io/shortid"
 	"github.com/valyala/fasthttp"
-	bimg "gopkg.in/h2non/bimg.v1"
 	"regexp"
 )
 
@@ -50,38 +49,6 @@ func jsonResponse(ctx *fasthttp.RequestCtx, status int, body []byte) {
 	}
 }
 
-func serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, checkExists bool) bool {
-	if checkExists {
-		info, err := os.Stat(filePath)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				log.Println(err)
-			}
-			return false
-		}
-		if info.IsDir() {
-			return false
-		}
-	}
-	fasthttp.ServeFileUncompressed(ctx, filePath)
-	status := ctx.Response.StatusCode()
-	ok := status < 400
-	if !ok {
-		ctx.Response.ResetBody()
-	}
-
-	return ok
-}
-
-func parseImageUri(requestPath []byte) (options, imageId string) {
-	match := IMAGE_URI_REGEX.FindStringSubmatch(string(requestPath))
-	if len(match) != 4 {
-		return
-	}
-	options, imageId = match[2], match[3]
-	return
-}
-
 // In case of ocurring any panic in code, this function will serve
 // 500 error and log the error message.
 func handlePanic(ctx *fasthttp.RequestCtx) {
@@ -112,11 +79,8 @@ func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
 }
 
 func (handler *Handler) tokenIsValid(ctx *fasthttp.RequestCtx) bool {
-	if len(handler.Config.Token) != 0 &&
-		handler.Config.Token != string(ctx.Request.Header.Peek("Token")) {
-		return false
-	}
-	return true
+	return len(handler.Config.Token) == 0 ||
+		handler.Config.Token == string(ctx.Request.Header.Peek("Token"))
 }
 
 func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
@@ -130,7 +94,6 @@ func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	imageId := shortid.GetDefault().MustGenerate()
 	fileHeader, err := ctx.FormFile("image_file")
 	if err != nil {
 		jsonResponse(ctx, 400, ERROR_IMAGE_NOT_PROVIDED)
@@ -141,6 +104,7 @@ func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	imageId := shortid.GetDefault().MustGenerate()
 	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
 	if err := os.MkdirAll(filepath.Dir(imagePath), 0755); err != nil {
 		panic(err)
@@ -149,76 +113,6 @@ func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
 		panic(err)
 	}
 	jsonResponse(ctx, 200, []byte(fmt.Sprintf(`{"image_id": "%s"}`, imageId)))
-}
-
-func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
-	if !ctx.IsGet() {
-		jsonResponse(ctx, 405, ERROR_METHOD_NOT_ALLOWED)
-		return
-	}
-	options, imageId := parseImageUri(ctx.Path())
-	if imageId == "" {
-		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
-		return
-	}
-
-	if options == "" {
-		// serve original file
-		imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
-		if ok := serveFileFromDisk(ctx, imagePath, true); !ok {
-			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
-		}
-		return
-	}
-
-	imageParams, err := CreateImageParams(
-		imageId,
-		options,
-		bytes.Contains(ctx.Request.Header.Peek("accept"), []byte("webp")),
-		handler.Config,
-	)
-
-	if err != nil {
-		errorBody := []byte(fmt.Sprintf(`{"error": "Invalid options: %v"}`, err))
-		jsonResponse(ctx, 400, errorBody)
-		return
-	}
-
-	cacheFilePath := imageParams.GetCachePath(handler.Config.DataDir)
-	if ok := serveFileFromDisk(ctx, cacheFilePath, true); ok {
-		// request served from cache
-		return
-	}
-
-	if !ValidateImageSize(imageParams.Width, imageParams.Height, handler.Config) {
-		jsonResponse(ctx, 403, ERROR_INVALID_IMAGE_SIZE)
-		return
-	}
-	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageParams.ImageId)
-
-	imgBuffer, err := bimg.Read(imagePath)
-
-	if err != nil {
-		if os.IsNotExist(err) {
-			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
-			return
-		}
-		panic(err)
-	}
-
-	convertedImage, err := Convert(imgBuffer, imageParams)
-	if err != nil {
-		panic(err)
-	}
-	if err := os.MkdirAll(filepath.Dir(cacheFilePath), 0755); err != nil {
-		panic(err)
-	}
-	if err := ioutil.WriteFile(cacheFilePath, convertedImage, 0604); err != nil {
-		panic(err)
-	}
-
-	ctx.Response.SetStatusCode(200)
-	serveFileFromDisk(ctx, cacheFilePath, false)
 }
 
 func (handler *Handler) handleDelete(ctx *fasthttp.RequestCtx) {
@@ -249,5 +143,125 @@ func (handler *Handler) handleDelete(ctx *fasthttp.RequestCtx) {
 		panic(err)
 	}
 	jsonResponse(ctx, 204, nil)
+	return
+}
+
+func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
+	if !ctx.IsGet() {
+		jsonResponse(ctx, 405, ERROR_METHOD_NOT_ALLOWED)
+		return
+	}
+	options, imageId := parseImageUri(ctx.Path())
+	if imageId == "" {
+		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
+		return
+	}
+
+	if len(options) == 0 {
+		// user wants original file
+		imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
+		if ok := serveFileFromDisk(ctx, imagePath, true); !ok {
+			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
+		}
+		return
+	}
+
+	webpAccepted := bytes.Contains(ctx.Request.Header.Peek("accept"), []byte("webp"))
+	if webpAccepted {
+		ctx.SetContentType(CT_WEBP)
+	} else {
+		ctx.SetContentType(CT_JPEG)
+	}
+
+	imageParams, err := CreateImageParams(
+		imageId,
+		options,
+		webpAccepted,
+		handler.Config,
+	)
+
+	if err != nil {
+		errorBody := []byte(fmt.Sprintf(`{"error": "Invalid options: %v"}`, err))
+		jsonResponse(ctx, 400, errorBody)
+		return
+	}
+
+	cacheFilePath := imageParams.GetCachePath(handler.Config.DataDir)
+	if ok := serveFileFromDisk(ctx, cacheFilePath, true); ok {
+		// request served from cache
+		return
+	}
+
+	// cache didn't exist
+
+	if !ValidateImageSize(imageParams.Width, imageParams.Height, handler.Config) {
+		jsonResponse(ctx, 403, ERROR_INVALID_IMAGE_SIZE)
+		return
+	}
+
+	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageParams.ImageId)
+	imgBuffer, err := ioutil.ReadFile(imagePath)
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
+			return
+		}
+		panic(err)
+	}
+
+	convertedImage, err := Convert(imgBuffer, imageParams)
+	if err != nil {
+		panic(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(cacheFilePath), 0755); err != nil {
+		panic(err)
+	}
+	if err := ioutil.WriteFile(cacheFilePath, convertedImage, 0604); err != nil {
+		panic(err)
+	}
+
+	ctx.Response.SetStatusCode(200)
+	serveFileFromDisk(ctx, cacheFilePath, false)
+}
+
+func serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, checkExists bool) bool {
+	if checkExists {
+		info, err := os.Stat(filePath)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				log.Println(err)
+			}
+			return false
+		}
+		if info.IsDir() {
+			return false
+		}
+	}
+	fasthttp.ServeFileUncompressed(ctx, filePath)
+	status := ctx.Response.StatusCode()
+
+	/* Instead of returning an error, fasthttp.ServeFile will reflect
+	occurring of an error in status code and response body.
+	We should detect if any error occured by checking the status code and
+	then if any error occured, we will reset the response body
+	to write our nice and pretty error message later. */
+	ok := status < 400
+	if !ok {
+		ctx.Response.ResetBody()
+	}
+
+	return ok
+}
+
+func parseImageUri(requestPath []byte) (options, imageId string) {
+	// options are in the format below:
+	// w=200,h=200,fit=cover,quality=90
+
+	match := IMAGE_URI_REGEX.FindStringSubmatch(string(requestPath))
+	if len(match) != 4 {
+		return
+	}
+	options, imageId = match[2], match[3]
 	return
 }

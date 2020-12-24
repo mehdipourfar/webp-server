@@ -259,7 +259,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 		name        string
 		imageParams *ImageParams
 		imageSize   *bimg.ImageSize
-		imageType   bimg.ImageType
 		options     *bimg.Options
 	}{
 		{
@@ -275,7 +274,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 				Width:  900,
 				Height: 800,
 			},
-			imageType: bimg.PNG,
 			options: &bimg.Options{
 				Width:  300,
 				Height: 300,
@@ -297,7 +295,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 				Width:  900,
 				Height: 800,
 			},
-			imageType: bimg.PNG,
 			options: &bimg.Options{
 				Width:  300,
 				Height: 300,
@@ -319,7 +316,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 				Width:  900,
 				Height: 400,
 			},
-			imageType: bimg.PNG,
 			options: &bimg.Options{
 				Width:  300,
 				Height: 300,
@@ -341,7 +337,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 				Width:  400,
 				Height: 900,
 			},
-			imageType: bimg.PNG,
 			options: &bimg.Options{
 				Width:  300,
 				Height: 300,
@@ -363,7 +358,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 				Width:  900,
 				Height: 400,
 			},
-			imageType: bimg.PNG,
 			options: &bimg.Options{
 				Width:  300,
 				Height: 0,
@@ -385,7 +379,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 				Width:  900,
 				Height: 400,
 			},
-			imageType: bimg.PNG,
 			options: &bimg.Options{
 				Width:  0,
 				Height: 300,
@@ -406,7 +399,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 				Width:  900,
 				Height: 400,
 			},
-			imageType: bimg.PNG,
 			options: &bimg.Options{
 				Width:  0,
 				Height: 300,
@@ -427,7 +419,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 				Width:  900,
 				Height: 400,
 			},
-			imageType: bimg.PNG,
 			options: &bimg.Options{
 				Width: 300,
 				Type:  bimg.WEBP,
@@ -447,7 +438,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 				Width:  900,
 				Height: 400,
 			},
-			imageType: bimg.PNG,
 			options: &bimg.Options{
 				Width: 900,
 				Type:  bimg.WEBP,
@@ -459,7 +449,7 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			opts := tc.imageParams.ToBimgOptions(tc.imageSize, tc.imageType)
+			opts := tc.imageParams.ToBimgOptions(tc.imageSize)
 
 			if !bimgOptsAreEqual(tc.options, opts) {
 				t.Fatalf("Expected %s but result is %s",
