@@ -56,8 +56,8 @@ func ParseConfig(file io.Reader) *Config {
 		}
 	}
 
-	if cfg.DefaultImageQuality < 50 || cfg.DefaultImageQuality > 100 {
-		log.Fatal("Default image quality should be 50 < q < 100.")
+	if cfg.DefaultImageQuality < 10 || cfg.DefaultImageQuality > 100 {
+		log.Fatal("Default image quality should be 10 < q < 100.")
 	}
 	return &cfg
 }
