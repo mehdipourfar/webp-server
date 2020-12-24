@@ -17,14 +17,15 @@ Simple and minimal image server capable of storing, resizing, converting and cac
     https://example.com/image/w=500,h=500,fit=cover/(image_id)
     ```
 
-* ### What are the benfits of WebP format?
+* ### What are the benfits of serving images in WebP format?
   According to Google Developers website:
   >  WebP is a modern image format that provides superior lossless and lossy compression for images on the web. Using WebP, webmasters and web developers can create smaller, richer images that make the web faster.
 
-    Although nowadays most web browsers support WebP, less than 1% of websites serve their images in this format. That's maybe because converting images to WebP can be complicated and time consuming or developers are not sure if all browsers will support this format.
+    Although nowadays most web browsers support WebP, less than 1% of websites serve their images in this format. That's maybe because converting images to WebP can be complicated and time consuming or developers don't know what to do with the browsers which don't support WebP.
 
-* ### How should client application check if the browser supports WebP?
-    There is no need to do anything. When browsers request for an image, they will send an accept header containing supported image formats. `webp-server` will lookup that header to see if the browser supports WebP or not. If not, it will send the image in JPEG.
+* ### What can webp-server do about the browsers which don't support WebP?
+    When browsers request for an image, they will send an accept header containing supported image formats. `webp-server` will lookup that header to see if the browser supports WebP or not. If not, it will send the image in JPEG.
+
 * ### Isn't it resource expensive to convert images on each request?
   Yes, it is. For this reason, `webp-server` will cache each converted image after the first request.
 
