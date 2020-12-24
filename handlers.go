@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 
@@ -28,13 +29,16 @@ var (
 	PATH_IMAGE  = []byte("/image/")
 	PATH_DELETE = []byte("/delete/")
 
-	ERROR_METHOD_NOT_ALLOWED = []byte(`{"error": "Method not allowed"}`)
-	ERROR_IMAGE_NOT_PROVIDED = []byte(`{"error": "image_file field not provided"}`)
-	ERROR_FILE_IS_NOT_IMAGE  = []byte(`{"error": "Provided file is not an accepted image"}`)
-	ERROR_INVALID_TOKEN      = []byte(`{"error": "Invalid Token"}`)
-	ERROR_IMAGE_NOT_FOUND    = []byte(`{"error": "Image not found"}`)
-	ERROR_ADDRESS_NOT_FOUND  = []byte(`{"error": "Address not found"}`)
-	ERROR_SERVER             = []byte(`{"error": "Internal Server Error"}`)
+	ERROR_METHOD_NOT_ALLOWED     = []byte(`{"error": "Method not allowed"}`)
+	ERROR_IMAGE_NOT_PROVIDED     = []byte(`{"error": "image_file field not provided"}`)
+	ERROR_FILE_IS_NOT_IMAGE      = []byte(`{"error": "Provided file is not an accepted image"}`)
+	ERROR_INVALID_TOKEN          = []byte(`{"error": "Invalid Token"}`)
+	ERROR_IMAGE_NOT_FOUND        = []byte(`{"error": "Image not found"}`)
+	ERROR_ADDRESS_NOT_FOUND      = []byte(`{"error": "Address not found"}`)
+	ERROR_SERVER                 = []byte(`{"error": "Internal Server Error"}`)
+	ERROR_TOO_BIG_REQUEST_HEADER = []byte(`{"error": "Too big request header"}`)
+	ERROR_REQUEST_TIMEOUT        = []byte(`{"error": "Request timeout"}`)
+	ERROR_CANNOT_PARSE_REQUEST   = []byte(`{"error": "Error when parsing request"}`)
 
 	IMAGE_URI_REGEX  = regexp.MustCompile("/image/((?P<options>[0-9a-z,=-]+)/)?(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
 	DELETE_URI_REGEX = regexp.MustCompile("/delete/(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
@@ -223,6 +227,17 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 
 	ctx.Response.SetStatusCode(200)
 	serveFileFromDisk(ctx, cacheFilePath, false)
+}
+
+func (handler *Handler) handleErrors(ctx *fasthttp.RequestCtx, err error) {
+	if _, ok := err.(*fasthttp.ErrSmallBuffer); ok {
+		jsonResponse(ctx, fasthttp.StatusRequestHeaderFieldsTooLarge, ERROR_TOO_BIG_REQUEST_HEADER)
+		ctx.Error("Too big request header", fasthttp.StatusRequestHeaderFieldsTooLarge)
+	} else if netErr, ok := err.(*net.OpError); ok && netErr.Timeout() {
+		jsonResponse(ctx, fasthttp.StatusRequestTimeout, ERROR_REQUEST_TIMEOUT)
+	} else {
+		jsonResponse(ctx, fasthttp.StatusBadRequest, ERROR_CANNOT_PARSE_REQUEST)
+	}
 }
 
 func serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, checkExists bool) bool {
