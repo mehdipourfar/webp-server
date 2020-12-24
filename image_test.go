@@ -47,15 +47,15 @@ func TestCachePath(t *testing.T) {
 		WebpAccepted: true,
 	}
 
-	expectedKey := "c64dda22268336d2c246899c2bc79005"
+	md5Sum := "c64dda22268336d2c246899c2bc79005"
 
-	if cacheKey := params.GetMd5(); cacheKey != expectedKey {
-		t.Errorf("Something wrong with md5: %s", cacheKey)
+	if value := params.GetMd5(); value != md5Sum {
+		t.Errorf("Something wrong with md5: %s", value)
 	}
 
 	filePath := params.GetCachePath("/tmp/media/")
 
-	if filePath != fmt.Sprintf("/tmp/media/caches/5/00/%s", expectedKey) {
+	if filePath != "/tmp/media/caches/5/00/NG4uQBa2f-c64dda22268336d2c246899c2bc79005" {
 		t.Errorf("Something wrong with cache file path: %s", filePath)
 	}
 }

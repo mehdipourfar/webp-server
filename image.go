@@ -98,8 +98,9 @@ func (i *ImageParams) GetMd5() string {
 }
 
 func (i *ImageParams) GetCachePath(dataDir string) string {
-	fileName := i.GetMd5()
-	parentDir := fmt.Sprintf("caches/%s/%s", fileName[31:32], fileName[29:31])
+	md5Sum := i.GetMd5()
+	fileName := fmt.Sprintf("%s-%s", i.ImageId, md5Sum)
+	parentDir := fmt.Sprintf("caches/%s/%s", md5Sum[31:32], md5Sum[29:31])
 	parentDir = filepath.Join(dataDir, parentDir)
 	return fmt.Sprintf("%s/%s", parentDir, fileName)
 }

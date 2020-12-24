@@ -32,7 +32,6 @@ var (
 	ERROR_IMAGE_NOT_PROVIDED = []byte(`{"error": "image_file field not provided"}`)
 	ERROR_FILE_IS_NOT_IMAGE  = []byte(`{"error": "Provided file is not an accepted image"}`)
 	ERROR_INVALID_TOKEN      = []byte(`{"error": "Invalid Token"}`)
-	ERROR_INVALID_IMAGE_SIZE = []byte(`{"error": "Unsupported image size. Contact server admin."}`)
 	ERROR_IMAGE_NOT_FOUND    = []byte(`{"error": "Image not found"}`)
 	ERROR_ADDRESS_NOT_FOUND  = []byte(`{"error": "Address not found"}`)
 	ERROR_SERVER             = []byte(`{"error": "Internal Server Error"}`)
@@ -152,7 +151,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	options, imageId := parseImageUri(ctx.Path())
-	if imageId == "" {
+	if len(imageId) == 0 {
 		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
 		return
 	}
@@ -167,11 +166,6 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	}
 
 	webpAccepted := bytes.Contains(ctx.Request.Header.Peek("accept"), []byte("webp"))
-	if webpAccepted {
-		ctx.SetContentType(CT_WEBP)
-	} else {
-		ctx.SetContentType(CT_JPEG)
-	}
 
 	imageParams, err := CreateImageParams(
 		imageId,
@@ -184,6 +178,12 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		errorBody := []byte(fmt.Sprintf(`{"error": "Invalid options: %v"}`, err))
 		jsonResponse(ctx, 400, errorBody)
 		return
+	}
+
+	if webpAccepted {
+		ctx.SetContentType(CT_WEBP)
+	} else {
+		ctx.SetContentType(CT_JPEG)
 	}
 
 	cacheFilePath := imageParams.GetCachePath(handler.Config.DataDir)
