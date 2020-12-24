@@ -32,8 +32,6 @@ func ValidateImage(header *multipart.FileHeader) bool {
 
 func ValidateImageParams(imageParams *ImageParams, config *Config) error {
 	validSize := false
-	validQuality := imageParams.Quality == 0
-
 	imageSize := fmt.Sprintf("%dx%d", imageParams.Width, imageParams.Height)
 	for _, size := range config.ValidImageSizes {
 		if size == imageSize {
@@ -42,6 +40,14 @@ func ValidateImageParams(imageParams *ImageParams, config *Config) error {
 		}
 	}
 
+	if !validSize {
+		return fmt.Errorf(
+			"size=%dx%d is not supported by server. Contact server admin.",
+			imageParams.Width, imageParams.Height)
+	}
+
+	validQuality := imageParams.Quality == 0
+
 	if !validQuality && imageParams.Quality <= 100 && imageParams.Quality >= 10 {
 		for _, val := range config.ValidImageQualities {
 			if val == imageParams.Quality {
@@ -49,12 +55,6 @@ func ValidateImageParams(imageParams *ImageParams, config *Config) error {
 				break
 			}
 		}
-	}
-
-	if !validSize {
-		return fmt.Errorf(
-			"size=%dx%d is not supported by server. Contact server admin.",
-			imageParams.Width, imageParams.Height)
 	}
 
 	if !validQuality {
