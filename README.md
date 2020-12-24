@@ -30,10 +30,10 @@ Simple and minimal image server capable of storing, resizing, converting and cac
   Yes, it is. For this reason, `webp-server` will cache each converted image after the first request.
 
 * ### What about security topics such as DOS attack or heavy storage usage?
-  It is up to youf. You can limit the combinations of widths and heights or qualities that you accept from the client in `webp-server` configuration file; and by doing that you will narrow down the type of accepted requests for generating images. In case of serving requests from the cache, powered by `fasthttp`, `webp-server` can be blazingly fast.
+  It is up to you. You can limit the combinations of widths and heights or qualities that you accept from the client in `webp-server` configuration file, and by doing that you will narrow down the type of accepted requests for generating images. In case of serving requests from the cache, powered by `fasthttp`, `webp-server` can be blazingly fast.
 
 * ### Can web clients upload images to `webp-server` and send the `image_id` to web server?
-  It is strongly recommended not to do this and also to not share your `webp-server` token with frontend applications for security reasons. Frontend should upload image to backend, backend should upload it to wepb-server and store the returning `image_id` in database.
+  It is strongly recommended not to do this and also to not share your `webp-server` token with frontend applications for security reasons. Process should be like this: Frontend uploads the image to backend, backend uploads it to wepb-server and stores the returning `image_id` in database.
 
 * ### What is the advantage of using `webp-server` instead of similar projects?
   It is simple and minimal and has been designed to work along the backend applications for serving images of websites in WebP format. It does not support all kinds of manipulations that one can do with images. It does a few things and tries to do them perfectly.
