@@ -153,23 +153,18 @@ func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize, imageType bimg.Im
 	return options
 }
 
-func Convert(fileBuffer []byte, params *ImageParams) ([]byte, bimg.ImageType, error) {
+func Convert(fileBuffer []byte, params *ImageParams) ([]byte, error) {
 	imageType := bimg.DetermineImageType(fileBuffer)
-
-	if imageType == bimg.GIF {
-		// ignore gif conversion
-		return fileBuffer, imageType, nil
-	}
 	img := bimg.NewImage(fileBuffer)
 	size, err := img.Size()
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	options := params.ToBimgOptions(&size, imageType)
 	newImage, err := img.Process(*options)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return newImage, options.Type, nil
+	return newImage, nil
 }

@@ -19,7 +19,6 @@ var (
 	TEST_FILE_PNG  = "./testdata/test.png"
 	TEST_FILE_JPEG = "./testdata/test.jpg"
 	TEST_FILE_WEBP = "./testdata/test.webp"
-	TEST_FILE_GIF  = "./testdata/test.gif"
 	TEST_FILE_PDF  = "./testdata/test.pdf"
 )
 
@@ -298,17 +297,6 @@ func TestFetchFunc(t *testing.T) {
 			expectedCt:     CT_JPEG,
 			expectedWidth:  500,
 			expectedHeight: 500,
-		},
-		{
-			name:           "test gif",
-			uploadFilePath: TEST_FILE_GIF,
-			fetchOpts:      "w=500,h=500,fit=cover",
-			webpAccepted:   false,
-			expectedStatus: 200,
-			expectedError:  nil,
-			expectedCt:     CT_GIF,
-			expectedWidth:  703,
-			expectedHeight: 681,
 		},
 		{
 			name:           "test string as width",

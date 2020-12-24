@@ -22,7 +22,6 @@ var (
 	CT_JPEG = "image/jpeg"
 	CT_PNG  = "image/png"
 	CT_WEBP = "image/webp"
-	CT_GIF  = "image/gif"
 	CT_JSON = "application/json"
 
 	PATH_HEALTH = []byte("/health/")
@@ -207,7 +206,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		panic(err)
 	}
 
-	convertedImage, _, err := Convert(imgBuffer, imageParams)
+	convertedImage, err := Convert(imgBuffer, imageParams)
 	if err != nil {
 		panic(err)
 	}
