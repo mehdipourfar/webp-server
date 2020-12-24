@@ -19,6 +19,7 @@ type Config struct {
 	ValidImageSizes      []string `yaml:"valid_image_sizes"`
 	ValidImageQualities  []int    `yaml:"valid_image_qualities"`
 	MaxUploadedImageSize int      `yaml:"max_uploaded_image_size"` // in megabytes
+	HttpCacheTTL         int      `yaml:"http_cache_ttl"`
 }
 
 func ParseConfig(file io.Reader) *Config {
@@ -27,6 +28,7 @@ func ParseConfig(file io.Reader) *Config {
 		ServerAddress:        "127.0.0.1:8080",
 		ValidImageSizes:      []string{"300x300", "500x500"},
 		MaxUploadedImageSize: 4,
+		HttpCacheTTL:         2592000,
 	}
 
 	buf, err := ioutil.ReadAll(file)

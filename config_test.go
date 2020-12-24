@@ -27,6 +27,8 @@ valid_image_qualities:
   - 100
 max_uploaded_image_size:
   3
+http_cache_ttl:
+  10
 `)
 	cfg := ParseConfig(config_file)
 	expected := &Config{
@@ -37,6 +39,7 @@ max_uploaded_image_size:
 		ValidImageSizes:      []string{"200x200", "500x500", "600x600"},
 		ValidImageQualities:  []int{90, 95, 100},
 		MaxUploadedImageSize: 3,
+		HttpCacheTTL:         10,
 	}
 
 	if !reflect.DeepEqual(cfg, expected) {

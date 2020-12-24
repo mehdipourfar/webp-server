@@ -15,3 +15,5 @@ valid_image_sizes:
   - 500x500
 max_uploaded_image_size:
   4 # in megabytes
+http_cache_ttl:
+  2592000 # in seconds. default is 1 month.

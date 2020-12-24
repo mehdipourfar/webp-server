@@ -15,7 +15,8 @@ import (
 )
 
 type Handler struct {
-	Config *Config
+	Config             *Config
+	CacheControlHeader []byte
 }
 
 var (
@@ -28,6 +29,8 @@ var (
 	PATH_UPLOAD = []byte("/upload/")
 	PATH_IMAGE  = []byte("/image/")
 	PATH_DELETE = []byte("/delete/")
+
+	CACHE_CONTROL = []byte("Cache-Control")
 
 	ERROR_METHOD_NOT_ALLOWED     = []byte(`{"error": "Method not allowed"}`)
 	ERROR_IMAGE_NOT_PROVIDED     = []byte(`{"error": "image_file field not provided"}`)
@@ -163,7 +166,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	if len(options) == 0 {
 		// user wants original file
 		imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
-		if ok := serveFileFromDisk(ctx, imagePath, true); !ok {
+		if ok := handler.serveFileFromDisk(ctx, imagePath, true); !ok {
 			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
 		}
 		return
@@ -191,7 +194,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	}
 
 	cacheFilePath := imageParams.GetCachePath(handler.Config.DataDir)
-	if ok := serveFileFromDisk(ctx, cacheFilePath, true); ok {
+	if ok := handler.serveFileFromDisk(ctx, cacheFilePath, true); ok {
 		// request served from cache
 		return
 	}
@@ -226,7 +229,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.Response.SetStatusCode(200)
-	serveFileFromDisk(ctx, cacheFilePath, false)
+	handler.serveFileFromDisk(ctx, cacheFilePath, false)
 }
 
 func (handler *Handler) handleErrors(ctx *fasthttp.RequestCtx, err error) {
@@ -240,7 +243,7 @@ func (handler *Handler) handleErrors(ctx *fasthttp.RequestCtx, err error) {
 	}
 }
 
-func serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, checkExists bool) bool {
+func (handler *Handler) serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, checkExists bool) bool {
 	if checkExists {
 		info, err := os.Stat(filePath)
 		if err != nil {
@@ -264,6 +267,8 @@ func serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, checkExists bo
 	ok := status < 400
 	if !ok {
 		ctx.Response.ResetBody()
+	} else {
+		ctx.Response.Header.SetBytesKV(CACHE_CONTROL, handler.CacheControlHeader)
 	}
 
 	return ok
