@@ -64,14 +64,9 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 				return nil, fmt.Errorf("Supported fits are cover, contain and scale-down")
 			}
 		case "quality", "q":
-			quality, err := strconv.Atoi(val)
+			params.Quality, err = strconv.Atoi(val)
 			if err != nil {
 				return nil, fmt.Errorf("Quality should be integer")
-			}
-			if !ValidateImageQuality(quality, config) {
-				return nil, fmt.Errorf("quality=%d is not supported by server. Contact server admin.", quality)
-			} else {
-				params.Quality = quality
 			}
 		default:
 			return nil, fmt.Errorf("Invalid filter key: %s", key)

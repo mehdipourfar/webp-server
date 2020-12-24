@@ -191,11 +191,11 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		// request served from cache
 		return
 	}
-
 	// cache didn't exist
 
-	if !ValidateImageSize(imageParams.Width, imageParams.Height, handler.Config) {
-		jsonResponse(ctx, 403, ERROR_INVALID_IMAGE_SIZE)
+	if err := ValidateImageParams(imageParams, handler.Config); err != nil {
+		errorBody := []byte(fmt.Sprintf(`{"error": "%v"}`, err))
+		jsonResponse(ctx, 400, errorBody)
 		return
 	}
 

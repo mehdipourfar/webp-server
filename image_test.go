@@ -220,14 +220,6 @@ func TestGetParamsFromUri(t *testing.T) {
 			},
 			err: nil,
 		},
-		{
-			testId:         17,
-			imageId:        "NG4uQBa2f",
-			options:        "q=60",
-			webpAccepted:   true,
-			expectedParams: &ImageParams{},
-			err:            fmt.Errorf("quality=60 is not supported by server. Contact server admin."),
-		},
 	}
 
 	for _, tc := range tt {
@@ -240,6 +232,9 @@ func TestGetParamsFromUri(t *testing.T) {
 			)
 
 			if tc.err != nil {
+				if err == nil {
+					t.Fatalf("Expected erro (%v) but no error occurred", tc.err)
+				}
 				if tc.err.Error() != err.Error() {
 					t.Fatalf("Expected error %v but got %v", tc.err, err)
 				}
