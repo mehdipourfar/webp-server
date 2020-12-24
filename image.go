@@ -81,11 +81,10 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 	return params, nil
 }
 
-func ImageIdToFilePath(dataDir string, imageId string) (parentDir string, filePath string) {
-	parentDir = fmt.Sprintf("images/%s/%s", imageId[1:2], imageId[3:5])
+func ImageIdToFilePath(dataDir string, imageId string) string {
+	parentDir := fmt.Sprintf("images/%s/%s", imageId[1:2], imageId[3:5])
 	parentDir = filepath.Join(dataDir, parentDir)
-	filePath = fmt.Sprintf("%s/%s", parentDir, imageId)
-	return
+	return fmt.Sprintf("%s/%s", parentDir, imageId)
 }
 
 func (i *ImageParams) GetMd5() string {
@@ -103,13 +102,11 @@ func (i *ImageParams) GetMd5() string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func (i *ImageParams) GetCachePath(dataDir string) (parentDir string, filePath string) {
+func (i *ImageParams) GetCachePath(dataDir string) string {
 	fileName := i.GetMd5()
-
-	parentDir = fmt.Sprintf("caches/%s/%s", fileName[31:32], fileName[29:31])
+	parentDir := fmt.Sprintf("caches/%s/%s", fileName[31:32], fileName[29:31])
 	parentDir = filepath.Join(dataDir, parentDir)
-	filePath = fmt.Sprintf("%s/%s", parentDir, fileName)
-	return
+	return fmt.Sprintf("%s/%s", parentDir, fileName)
 }
 
 func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize, imageType bimg.ImageType) *bimg.Options {

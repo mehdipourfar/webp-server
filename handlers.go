@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/teris-io/shortid"
 	"github.com/valyala/fasthttp"
@@ -141,14 +142,12 @@ func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	parentDir, filePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
-	if err := os.MkdirAll(parentDir, 0755); err != nil {
+	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
+	if err := os.MkdirAll(filepath.Dir(imagePath), 0755); err != nil {
 		panic(err)
-		return
 	}
-	if err := fasthttp.SaveMultipartFile(fileHeader, filePath); err != nil {
+	if err := fasthttp.SaveMultipartFile(fileHeader, imagePath); err != nil {
 		panic(err)
-		return
 	}
 	jsonResponse(ctx, 200, []byte(fmt.Sprintf(`{"image_id": "%s"}`, imageId)))
 }
@@ -166,8 +165,8 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 
 	if options == "" {
 		// serve original file
-		_, path := ImageIdToFilePath(handler.Config.DataDir, imageId)
-		if ok := serveFileFromDisk(ctx, path, true); !ok {
+		imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
+		if ok := serveFileFromDisk(ctx, imagePath, true); !ok {
 			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
 		}
 		return
@@ -186,7 +185,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cacheParentDir, cacheFilePath := imageParams.GetCachePath(handler.Config.DataDir)
+	cacheFilePath := imageParams.GetCachePath(handler.Config.DataDir)
 	if ok := serveFileFromDisk(ctx, cacheFilePath, true); ok {
 		// request served from cache
 		return
@@ -196,9 +195,9 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 		jsonResponse(ctx, 403, ERROR_INVALID_IMAGE_SIZE)
 		return
 	}
-	_, imageFilePath := ImageIdToFilePath(handler.Config.DataDir, imageParams.ImageId)
+	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageParams.ImageId)
 
-	imgBuffer, err := bimg.Read(imageFilePath)
+	imgBuffer, err := bimg.Read(imagePath)
 
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -212,7 +211,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		panic(err)
 	}
-	if err := os.MkdirAll(cacheParentDir, 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(cacheFilePath), 0755); err != nil {
 		panic(err)
 	}
 	if err := ioutil.WriteFile(cacheFilePath, convertedImage, 0604); err != nil {
@@ -240,7 +239,7 @@ func (handler *Handler) handleDelete(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	imageId := string(match[1])
-	_, imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
+	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
 
 	err := os.Remove(imagePath)
 	if err != nil {

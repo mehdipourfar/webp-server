@@ -30,13 +30,10 @@ func bimgOptsAreEqual(o1 *bimg.Options, o2 *bimg.Options) bool {
 }
 
 func TestImagePath(t *testing.T) {
-	parentDir, filePath := ImageIdToFilePath("/tmp/media", "FyBmW7C2f")
-	if parentDir != "/tmp/media/images/y/mW" {
-		t.Errorf("Something wrong with image file parentDir: %s", parentDir)
-	}
+	imagePath := ImageIdToFilePath("/tmp/media", "FyBmW7C2f")
 
-	if filePath != "/tmp/media/images/y/mW/FyBmW7C2f" {
-		t.Errorf("Something wrong with image file path: %s", filePath)
+	if imagePath != "/tmp/media/images/y/mW/FyBmW7C2f" {
+		t.Errorf("Something wrong with image file path: %s", imagePath)
 	}
 }
 
@@ -56,11 +53,7 @@ func TestCachePath(t *testing.T) {
 		t.Errorf("Something wrong with md5: %s", cacheKey)
 	}
 
-	parentDir, filePath := params.GetCachePath("/tmp/media/")
-
-	if parentDir != "/tmp/media/caches/5/00" {
-		t.Errorf("Something wrong with cache parentDir: %s", parentDir)
-	}
+	filePath := params.GetCachePath("/tmp/media/")
 
 	if filePath != fmt.Sprintf("/tmp/media/caches/5/00/%s", expectedKey) {
 		t.Errorf("Something wrong with cache file path: %s", filePath)

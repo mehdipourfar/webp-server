@@ -469,8 +469,8 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 		Quality: config.DefaultImageQuality,
 		Fit:     FIT_COVER,
 	}
-	_, cachePath := imageParams.GetCachePath(config.DataDir)
-	_, imagePath := ImageIdToFilePath(config.DataDir, uploadResult.ImageId)
+	cachePath := imageParams.GetCachePath(config.DataDir)
+	imagePath := ImageIdToFilePath(config.DataDir, uploadResult.ImageId)
 
 	serve(server, fetchReq)
 	buf, err := bimg.Read(cachePath)
@@ -590,7 +590,7 @@ func TestDeleteHandler(t *testing.T) {
 		})
 	}
 
-	_, imagePath := ImageIdToFilePath(config.DataDir, uploadResult.ImageId)
+	imagePath := ImageIdToFilePath(config.DataDir, uploadResult.ImageId)
 	if _, err := os.Stat(imagePath); !os.IsNotExist(err) {
 		t.Fatal("Expected image to be deleted")
 	}
