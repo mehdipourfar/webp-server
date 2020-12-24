@@ -20,6 +20,7 @@ type Config struct {
 	ValidImageQualities  []int    `yaml:"valid_image_qualities"`
 	MaxUploadedImageSize int      `yaml:"max_uploaded_image_size"` // in megabytes
 	HttpCacheTTL         int      `yaml:"http_cache_ttl"`
+	LogPath              string   `yaml:"log_path"`
 }
 
 func ParseConfig(file io.Reader) *Config {
@@ -45,6 +46,10 @@ func ParseConfig(file io.Reader) *Config {
 
 	if !filepath.IsAbs(cfg.DataDir) {
 		log.Fatalf("Absolute path for data_dir is needed but got: %s", cfg.DataDir)
+	}
+
+	if len(cfg.LogPath) > 0 && !filepath.IsAbs(cfg.LogPath) {
+		log.Fatalf("Absolute path for log_path is needed but got: %s", cfg.DataDir)
 	}
 
 	if err := os.MkdirAll(cfg.DataDir, 0755); err != nil {

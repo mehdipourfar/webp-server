@@ -37,5 +37,14 @@ func main() {
 	}
 	config := ParseConfig(file)
 	file.Close()
+
+	if config.LogPath != "" {
+		logFile, err := os.OpenFile(config.LogPath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+		if err != nil {
+			log.Fatalf("Could not open log file: %v", err)
+		}
+		defer logFile.Close()
+		log.SetOutput(logFile)
+	}
 	runServer(config)
 }
