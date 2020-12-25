@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -17,6 +16,7 @@ import (
 type Handler struct {
 	Config             *Config
 	CacheControlHeader []byte
+	TaskMan            *TaskMan
 }
 
 var (
@@ -45,6 +45,10 @@ var (
 
 	IMAGE_URI_REGEX  = regexp.MustCompile("/image/((?P<options>[0-9a-z,=-]+)/)?(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
 	DELETE_URI_REGEX = regexp.MustCompile("/delete/(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
+
+	// This variable makes us be able to mock ConvertAndCache function in tests
+
+	ConvertFunction = Convert
 )
 
 func jsonResponse(ctx *fasthttp.RequestCtx, status int, body []byte) {
@@ -207,24 +211,16 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	}
 
 	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageParams.ImageId)
-	imgBuffer, err := ioutil.ReadFile(imagePath)
+
+	err = handler.TaskMan.Run(imageParams.GetMd5(), func() error {
+		return ConvertFunction(imagePath, cacheFilePath, imageParams)
+	})
 
 	if err != nil {
 		if os.IsNotExist(err) {
 			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
 			return
 		}
-		panic(err)
-	}
-
-	convertedImage, err := Convert(imgBuffer, imageParams)
-	if err != nil {
-		panic(err)
-	}
-	if err := os.MkdirAll(filepath.Dir(cacheFilePath), 0755); err != nil {
-		panic(err)
-	}
-	if err := ioutil.WriteFile(cacheFilePath, convertedImage, 0604); err != nil {
 		panic(err)
 	}
 

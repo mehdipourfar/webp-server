@@ -5,6 +5,8 @@ import (
 	"fmt"
 	bimg "gopkg.in/h2non/bimg.v1"
 	"io"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -149,17 +151,28 @@ func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize) *bimg.Options {
 	return options
 }
 
-func Convert(fileBuffer []byte, params *ImageParams) ([]byte, error) {
-	img := bimg.NewImage(fileBuffer)
+func Convert(inputPath, outputPath string, params *ImageParams) error {
+	imgBuffer, err := ioutil.ReadFile(inputPath)
+	if err != nil {
+		return err
+	}
+	img := bimg.NewImage(imgBuffer)
 	size, err := img.Size()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	options := params.ToBimgOptions(&size)
 	newImage, err := img.Process(*options)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return newImage, nil
+
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(outputPath, newImage, 0604); err != nil {
+		return err
+	}
+	return nil
 }

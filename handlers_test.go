@@ -11,6 +11,8 @@ import (
 	"mime/multipart"
 	"net"
 	"os"
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -108,7 +110,7 @@ func serve(server *fasthttp.Server, req *fasthttp.Request) *fasthttp.Response {
 	return resp
 }
 
-func getDefaultConfig() *Config {
+func getTestConfig() *Config {
 	dir, err := ioutil.TempDir("", "test")
 	if err != nil {
 		panic(err)
@@ -139,7 +141,7 @@ func TestHealthFunc(t *testing.T) {
 }
 
 func TestUploadFunc(t *testing.T) {
-	config := getDefaultConfig()
+	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
 
@@ -251,7 +253,7 @@ func TestUploadFunc(t *testing.T) {
 }
 
 func TestFetchFunc(t *testing.T) {
-	config := getDefaultConfig()
+	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
 	tt := []struct {
@@ -412,7 +414,7 @@ func Test404(t *testing.T) {
 }
 
 func TestFetchFuncMethodShouldBeGet(t *testing.T) {
-	config := getDefaultConfig()
+	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
 	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "POST", nil, nil)
@@ -423,7 +425,7 @@ func TestFetchFuncMethodShouldBeGet(t *testing.T) {
 }
 
 func TestFetchFuncWithInvalidImageId(t *testing.T) {
-	config := getDefaultConfig()
+	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
 	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "GET", nil, nil)
@@ -441,7 +443,7 @@ func TestFetchFuncWithInvalidImageId(t *testing.T) {
 }
 
 func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
-	config := getDefaultConfig()
+	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
@@ -492,7 +494,7 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 }
 
 func TestDeleteHandler(t *testing.T) {
-	config := getDefaultConfig()
+	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
@@ -597,7 +599,7 @@ func TestDeleteHandler(t *testing.T) {
 }
 
 func TestGettingOriginalImage(t *testing.T) {
-	config := getDefaultConfig()
+	config := getTestConfig()
 	server := CreateServer(config)
 
 	defer os.RemoveAll(config.DataDir)
@@ -636,4 +638,46 @@ func TestGettingOriginalImage(t *testing.T) {
 			size.Width, size.Height)
 	}
 
+}
+
+func TestConcurentConversionRequests(t *testing.T) {
+	config := getTestConfig()
+	server := CreateServer(config)
+
+	defer os.RemoveAll(config.DataDir)
+	uploadReq := createUploadRequest(
+		"POST", TOKEN,
+		"image_file", TEST_FILE_PNG,
+	)
+	uploadResult := &UploadResult{}
+	uploadResp := serve(server, uploadReq)
+	json.Unmarshal(uploadResp.Body(), uploadResult)
+
+	var wg sync.WaitGroup
+	reqUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageId)
+
+	var functionCalls int64
+
+	// override ConvertFunction which is used in handleFetch api
+	ConvertFunction = func(inputPath, outputPath string, params *ImageParams) error {
+		atomic.AddInt64(&functionCalls, 1)
+		return Convert(inputPath, outputPath, params)
+	}
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fetchReq := createRequest(reqUri, "GET", nil, nil)
+			resp := serve(server, fetchReq)
+			if resp.StatusCode() != 200 {
+				t.Errorf("expected status 200 but got %d", resp.StatusCode())
+			}
+		}()
+	}
+	wg.Wait()
+
+	if functionCalls != 1 {
+		t.Fatalf("Expected convert and cache func to be called once but called %d times", functionCalls)
+	}
 }
