@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -198,7 +200,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	}
 
 	cacheFilePath := imageParams.GetCachePath(handler.Config.DataDir)
-	if ok := handler.serveFileFromDisk(ctx, cacheFilePath, true); ok {
+	if ok := handler.serveFileFromDisk(ctx, cacheFilePath, false); ok {
 		// request served from cache
 		return
 	}
@@ -239,35 +241,20 @@ func (handler *Handler) handleErrors(ctx *fasthttp.RequestCtx, err error) {
 	}
 }
 
-func (handler *Handler) serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, checkExists bool) bool {
-	if checkExists {
-		info, err := os.Stat(filePath)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				log.Println(err)
-			}
-			return false
+func (handler *Handler) serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, setContentType bool) bool {
+	buf, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Println(err)
 		}
-		if info.IsDir() {
-			return false
-		}
+		return false
 	}
-	fasthttp.ServeFileUncompressed(ctx, filePath)
-	status := ctx.Response.StatusCode()
-
-	/* Instead of returning an error, fasthttp.ServeFile will reflect
-	occurring of an error in status code and response body.
-	We should detect if any error occured by checking the status code and
-	then if any error occured, we will reset the response body
-	to write our nice and pretty error message later. */
-	ok := status < 400
-	if !ok {
-		ctx.Response.ResetBody()
-	} else {
-		ctx.Response.Header.SetBytesKV(CACHE_CONTROL, handler.CacheControlHeader)
+	ctx.SetBody(buf)
+	ctx.Response.Header.SetBytesKV(CACHE_CONTROL, handler.CacheControlHeader)
+	if setContentType {
+		ctx.SetContentType(http.DetectContentType(buf))
 	}
-
-	return ok
+	return true
 }
 
 func parseImageUri(requestPath []byte) (options, imageId string) {
