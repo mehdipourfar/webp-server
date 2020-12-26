@@ -18,7 +18,7 @@ import (
 type Handler struct {
 	Config             *Config
 	CacheControlHeader []byte
-	TaskMan            *TaskMan
+	TaskStorage        *TaskStorage
 }
 
 var (
@@ -214,7 +214,7 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 
 	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageParams.ImageId)
 
-	err = handler.TaskMan.Run(imageParams.GetMd5(), func() error {
+	err = handler.TaskStorage.Run(imageParams.GetMd5(), func() error {
 		return ConvertFunction(imagePath, cacheFilePath, imageParams)
 	})
 
