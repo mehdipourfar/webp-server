@@ -14,9 +14,8 @@ import (
 */
 
 type Task struct {
-	Signal     chan struct{}
-	IsFinished bool
-	Error      error
+	Signal chan struct{}
+	Error  error
 }
 
 type TaskStorage struct {
@@ -30,7 +29,6 @@ func NewTaskStorage() *TaskStorage {
 
 func (task *Task) Done(err error) {
 	task.Error = err
-	task.IsFinished = true
 	close(task.Signal)
 }
 
