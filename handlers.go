@@ -233,7 +233,6 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 func (handler *Handler) handleErrors(ctx *fasthttp.RequestCtx, err error) {
 	if _, ok := err.(*fasthttp.ErrSmallBuffer); ok {
 		jsonResponse(ctx, fasthttp.StatusRequestHeaderFieldsTooLarge, ERROR_TOO_BIG_REQUEST_HEADER)
-		ctx.Error("Too big request header", fasthttp.StatusRequestHeaderFieldsTooLarge)
 	} else if netErr, ok := err.(*net.OpError); ok && netErr.Timeout() {
 		jsonResponse(ctx, fasthttp.StatusRequestTimeout, ERROR_REQUEST_TIMEOUT)
 	} else {
