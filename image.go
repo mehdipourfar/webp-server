@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/md5"
 	"fmt"
+	"github.com/valyala/bytebufferpool"
 	bimg "gopkg.in/h2non/bimg.v1"
 	"io"
 	"io/ioutil"
@@ -152,11 +153,16 @@ func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize) *bimg.Options {
 }
 
 func Convert(inputPath, outputPath string, params *ImageParams) error {
-	imgBuffer, err := ioutil.ReadFile(inputPath)
+	f, err := os.Open(inputPath)
 	if err != nil {
 		return err
 	}
-	img := bimg.NewImage(imgBuffer)
+	buffer := bytebufferpool.Get()
+	defer bytebufferpool.Put(buffer)
+	buffer.ReadFrom(f)
+	f.Close()
+
+	img := bimg.NewImage(buffer.B)
 	size, err := img.Size()
 	if err != nil {
 		return err

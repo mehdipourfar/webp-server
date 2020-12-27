@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/teris-io/shortid"
+	"github.com/valyala/bytebufferpool"
 	"github.com/valyala/fasthttp"
 	"regexp"
 )
@@ -242,17 +242,21 @@ func (handler *Handler) handleErrors(ctx *fasthttp.RequestCtx, err error) {
 }
 
 func (handler *Handler) serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath string, setContentType bool) bool {
-	buf, err := ioutil.ReadFile(filePath)
+	f, err := os.Open(filePath)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			log.Println(err)
 		}
 		return false
 	}
-	ctx.SetBody(buf)
+	buffer := bytebufferpool.Get()
+	defer bytebufferpool.Put(buffer)
+	buffer.ReadFrom(f)
+	f.Close()
+	ctx.SetBody(buffer.B)
 	ctx.Response.Header.SetBytesKV(CACHE_CONTROL, handler.CacheControlHeader)
 	if setContentType {
-		ctx.SetContentType(http.DetectContentType(buf))
+		ctx.SetContentType(http.DetectContentType(buffer.B))
 	}
 	return true
 }
