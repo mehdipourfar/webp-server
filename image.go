@@ -67,8 +67,7 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 				return nil, fmt.Errorf("Supported fits are cover, contain and scale-down")
 			}
 		case "quality", "q":
-			params.Quality, err = strconv.Atoi(val)
-			if err != nil {
+			if params.Quality, err = strconv.Atoi(val); err != nil {
 				return nil, fmt.Errorf("Quality should be integer")
 			}
 		default:

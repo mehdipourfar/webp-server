@@ -681,3 +681,29 @@ func TestConcurentConversionRequests(t *testing.T) {
 		t.Fatalf("Expected convert and cache func to be called once but called %d times", functionCalls)
 	}
 }
+
+func FuncTestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
+	config := getTestConfig()
+	server := CreateServer(config)
+
+	defer os.RemoveAll(config.DataDir)
+	uploadReq := createUploadRequest(
+		"POST", TOKEN,
+		"image_file", TEST_FILE_PNG,
+	)
+	uploadResult := &UploadResult{}
+	uploadResp := serve(server, uploadReq)
+	json.Unmarshal(uploadResp.Body(), uploadResult)
+
+	uri := fmt.Sprintf("http://test/image/w=800,h=900q=72/%s", uploadResult.ImageId)
+	req := createRequest(uri, "GET", nil, nil)
+	resp := serve(server, req)
+	if resp.StatusCode() != 400 {
+		t.Fatalf("Expected 400 but got %d", resp.StatusCode())
+	}
+	config.Debug = true
+	resp = serve(server, req)
+	if resp.StatusCode() != 200 {
+		t.Fatalf("Expected 200 but got %d", resp.StatusCode())
+	}
+}

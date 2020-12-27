@@ -29,6 +29,8 @@ max_uploaded_image_size:
   3
 http_cache_ttl:
   10
+debug:
+  true
 `)
 	cfg := ParseConfig(config_file)
 	expected := &Config{
@@ -40,6 +42,7 @@ http_cache_ttl:
 		ValidImageQualities:  []int{90, 95, 100},
 		MaxUploadedImageSize: 3,
 		HttpCacheTTL:         10,
+		Debug:                true,
 	}
 
 	if !reflect.DeepEqual(cfg, expected) {

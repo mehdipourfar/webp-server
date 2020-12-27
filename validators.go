@@ -31,6 +31,9 @@ func ValidateImage(header *multipart.FileHeader) bool {
 }
 
 func ValidateImageParams(imageParams *ImageParams, config *Config) error {
+	if config.Debug {
+		return nil
+	}
 	validSize := false
 	imageSize := fmt.Sprintf("%dx%d", imageParams.Width, imageParams.Height)
 	for _, size := range config.ValidImageSizes {

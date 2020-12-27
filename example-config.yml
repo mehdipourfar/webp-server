@@ -19,3 +19,5 @@ http_cache_ttl:
   2592000 # in seconds. default is 1 month.
 log_path:
   null # default is null and logs to console
+debug:
+  false

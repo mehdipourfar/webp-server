@@ -21,6 +21,7 @@ type Config struct {
 	MaxUploadedImageSize int      `yaml:"max_uploaded_image_size"` // in megabytes
 	HttpCacheTTL         int      `yaml:"http_cache_ttl"`
 	LogPath              string   `yaml:"log_path"`
+	Debug                bool     `yaml:"debug"`
 }
 
 func ParseConfig(file io.Reader) *Config {

@@ -75,6 +75,8 @@ accepted from users as the quality option.
 
 * `max_uploaded_image_size`: Maximum size of accepted uploaded images in Megabytes.
 
+* `debug`: When set to `true` `/image/` API does not check if width, height, and quality are included in `valid_image_sizes` and `valid_image_qualities`. It can be useful when you are developing your frontend applications and you are not yet sure which sizes and qualities you want. But do not set it to `true` on production server.
+
 
 ## Backend APIs
 * `/upload/  [Method: POST]`: Accepts image in multipart/form-data format with a field name of `image_file`. You should also pass the `Token` previously set in your configuration file as a header. All responses are in JSON format. If request is successful, you will get `200` status code with such body: `{"image_id": "lulRDHbMg"}` (Note that `image_id` length can vary from 9 to 12). Otherwise, depending on the error, you will get `4xx` or `5xx` status code with a body like this: `{"error": "reason of error"}`.
