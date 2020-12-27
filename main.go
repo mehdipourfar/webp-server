@@ -45,6 +45,8 @@ func main() {
 		}
 		defer logFile.Close()
 		log.SetOutput(logFile)
+	} else {
+		log.SetOutput(os.Stdout)
 	}
 	runServer(config)
 }
