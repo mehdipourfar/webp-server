@@ -12,7 +12,7 @@ func CreateServer(config *Config) *fasthttp.Server {
 	} else {
 		handler.CacheControlHeader = []byte(fmt.Sprintf("max-age=%d", config.HttpCacheTTL))
 	}
-	handler.TaskStorage = NewTaskStorage()
+	handler.TaskManager = NewTaskManager(config.ConvertConcurrency)
 	return &fasthttp.Server{
 		Handler:               handler.handleRequests,
 		ErrorHandler:          handler.handleErrors,

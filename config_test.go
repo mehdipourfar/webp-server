@@ -31,6 +31,8 @@ http_cache_ttl:
   10
 debug:
   true
+convert_concurrency:
+  3
 `)
 	cfg := ParseConfig(config_file)
 	expected := &Config{
@@ -43,6 +45,7 @@ debug:
 		MaxUploadedImageSize: 3,
 		HttpCacheTTL:         10,
 		Debug:                true,
+		ConvertConcurrency:   3,
 	}
 
 	if !reflect.DeepEqual(cfg, expected) {

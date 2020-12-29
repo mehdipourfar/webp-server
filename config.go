@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 
 	"gopkg.in/yaml.v2"
 )
@@ -22,17 +23,23 @@ type Config struct {
 	HttpCacheTTL         int      `yaml:"http_cache_ttl"`
 	LogPath              string   `yaml:"log_path"`
 	Debug                bool     `yaml:"debug"`
+	ConvertConcurrency   int      `yaml:"convert_concurrency"`
 }
 
-func ParseConfig(file io.Reader) *Config {
-	cfg := Config{
+func GetDefaultConfig() *Config {
+	return &Config{
 		DefaultImageQuality:  95,
 		ServerAddress:        "127.0.0.1:8080",
 		ValidImageSizes:      []string{"300x300", "500x500"},
 		MaxUploadedImageSize: 4,
 		HttpCacheTTL:         2592000,
+		ConvertConcurrency:   runtime.NumCPU(),
 	}
 
+}
+
+func ParseConfig(file io.Reader) *Config {
+	cfg := GetDefaultConfig()
 	buf, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Fatalf("%+v\n", err)
@@ -68,5 +75,9 @@ func ParseConfig(file io.Reader) *Config {
 	if cfg.DefaultImageQuality < 10 || cfg.DefaultImageQuality > 100 {
 		log.Fatal("Default image quality should be 10 < q < 100.")
 	}
-	return &cfg
+
+	if cfg.ConvertConcurrency <= 0 {
+		log.Fatal("Convert Concurrency should be greater than zero")
+	}
+	return cfg
 }

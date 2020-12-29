@@ -111,15 +111,15 @@ func serve(server *fasthttp.Server, req *fasthttp.Request) *fasthttp.Response {
 }
 
 func getTestConfig() *Config {
+	cfg := GetDefaultConfig()
 	dir, err := ioutil.TempDir("", "test")
 	if err != nil {
 		panic(err)
 	}
-	return &Config{
-		DataDir:         dir,
-		Token:           string(TOKEN),
-		ValidImageSizes: []string{"500x200", "500x500", "100x100"},
-	}
+	cfg.DataDir = dir
+	cfg.Token = string(TOKEN)
+	cfg.ValidImageSizes = []string{"500x200", "500x500", "100x100"}
+	return cfg
 }
 
 func TestHealthFunc(t *testing.T) {
@@ -268,7 +268,7 @@ func TestFetchFunc(t *testing.T) {
 		expectedHeight int
 	}{
 		{
-			name:           "test png with web accepted false",
+			name:           "test png with webp accepted false",
 			uploadFilePath: TEST_FILE_PNG,
 			fetchOpts:      "w=500,h=500,fit=cover",
 			webpAccepted:   false,
@@ -359,6 +359,9 @@ func TestFetchFunc(t *testing.T) {
 			fetchResp := serve(server, fetchReq)
 			status := fetchResp.Header.StatusCode()
 			if status != tc.expectedStatus {
+				if status != 200 {
+					t.Errorf("%q", fetchResp.Body())
+				}
 				t.Fatalf("Expected fetch status %d but got %d.",
 					tc.expectedStatus, status)
 			}

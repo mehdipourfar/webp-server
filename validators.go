@@ -49,7 +49,7 @@ func ValidateImageParams(imageParams *ImageParams, config *Config) error {
 			imageParams.Width, imageParams.Height)
 	}
 
-	validQuality := imageParams.Quality == 0
+	validQuality := imageParams.Quality == 0 || imageParams.Quality == config.DefaultImageQuality
 
 	if !validQuality && imageParams.Quality <= 100 && imageParams.Quality >= 10 {
 		for _, val := range config.ValidImageQualities {
