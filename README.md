@@ -128,8 +128,7 @@ upstream webp_server {
 }
 
 server {
-   ##
-   ##
+   # ...
 
    location /image/ {
         proxy_redirect off;
