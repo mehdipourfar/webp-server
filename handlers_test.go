@@ -612,7 +612,10 @@ func TestGettingOriginalImage(t *testing.T) {
 	)
 	uploadResult := &UploadResult{}
 	uploadResp := serve(server, uploadReq)
-	json.Unmarshal(uploadResp.Body(), uploadResult)
+	err := json.Unmarshal(uploadResp.Body(), uploadResult)
+	if err != nil {
+		t.Fatal(err)
+	}
 	uri := fmt.Sprintf("http://test/image/%s", "123456789")
 	req := createRequest(uri, "GET", nil, nil)
 	resp := serve(server, req)
@@ -654,7 +657,10 @@ func TestConcurentConversionRequests(t *testing.T) {
 	)
 	uploadResult := &UploadResult{}
 	uploadResp := serve(server, uploadReq)
-	json.Unmarshal(uploadResp.Body(), uploadResult)
+	err := json.Unmarshal(uploadResp.Body(), uploadResult)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var wg sync.WaitGroup
 	reqUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageId)
@@ -685,7 +691,7 @@ func TestConcurentConversionRequests(t *testing.T) {
 	}
 }
 
-func FuncTestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
+func TestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
 	config := getTestConfig()
 	server := CreateServer(config)
 
@@ -696,9 +702,12 @@ func FuncTestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
 	)
 	uploadResult := &UploadResult{}
 	uploadResp := serve(server, uploadReq)
-	json.Unmarshal(uploadResp.Body(), uploadResult)
+	err := json.Unmarshal(uploadResp.Body(), uploadResult)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	uri := fmt.Sprintf("http://test/image/w=800,h=900q=72/%s", uploadResult.ImageId)
+	uri := fmt.Sprintf("http://test/image/w=800,h=900,q=72/%s", uploadResult.ImageId)
 	req := createRequest(uri, "GET", nil, nil)
 	resp := serve(server, req)
 	if resp.StatusCode() != 400 {
@@ -707,6 +716,6 @@ func FuncTestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
 	config.Debug = true
 	resp = serve(server, req)
 	if resp.StatusCode() != 200 {
-		t.Fatalf("Expected 200 but got %d", resp.StatusCode())
+		t.Fatalf("Expected 200 but got %d: %q", resp.StatusCode(), resp.Body())
 	}
 }

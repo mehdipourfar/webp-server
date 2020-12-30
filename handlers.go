@@ -23,7 +23,6 @@ type Handler struct {
 
 var (
 	CT_JPEG = "image/jpeg"
-	CT_PNG  = "image/png"
 	CT_WEBP = "image/webp"
 	CT_JSON = "application/json"
 
@@ -151,7 +150,6 @@ func (handler *Handler) handleDelete(ctx *fasthttp.RequestCtx) {
 		panic(err)
 	}
 	jsonResponse(ctx, 204, nil)
-	return
 }
 
 func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
@@ -246,7 +244,10 @@ func (handler *Handler) serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath str
 	}
 	buffer := bytebufferpool.Get()
 	defer bytebufferpool.Put(buffer)
-	buffer.ReadFrom(f)
+	_, err = buffer.ReadFrom(f)
+	if err != nil {
+		panic(err)
+	}
 	f.Close()
 	ctx.SetBody(buffer.B)
 	ctx.Response.Header.SetBytesKV(CACHE_CONTROL, handler.CacheControlHeader)

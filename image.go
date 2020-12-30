@@ -55,12 +55,10 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 			if params.Width, err = strconv.Atoi(val); err != nil {
 				return nil, fmt.Errorf("Width should be integer")
 			}
-			break
 		case "height", "h":
 			if params.Height, err = strconv.Atoi(val); err != nil {
 				return nil, fmt.Errorf("Height should be integer")
 			}
-			break
 		case "fit":
 			switch val {
 			case FIT_CONTAIN, FIT_COVER, FIT_SCALE_DOWN:
@@ -68,12 +66,10 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 			default:
 				return nil, fmt.Errorf("Supported fits are cover, contain and scale-down")
 			}
-			break
 		case "quality", "q":
 			if params.Quality, err = strconv.Atoi(val); err != nil {
 				return nil, fmt.Errorf("Quality should be integer")
 			}
-			break
 		default:
 			return nil, fmt.Errorf("Invalid filter key: %s", key)
 		}
@@ -99,7 +95,10 @@ func (i *ImageParams) GetMd5() string {
 		i.WebpAccepted,
 	)
 	h := md5.New()
-	io.WriteString(h, key)
+	_, err := io.WriteString(h, key)
+	if err != nil {
+		panic(err)
+	}
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
@@ -162,7 +161,10 @@ func Convert(inputPath, outputPath string, params *ImageParams) error {
 	}
 	buffer := bytebufferpool.Get()
 	defer bytebufferpool.Put(buffer)
-	buffer.ReadFrom(f)
+	_, err = buffer.ReadFrom(f)
+	if err != nil {
+		return err
+	}
 	f.Close()
 
 	img := bimg.NewImage(buffer.B)

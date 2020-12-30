@@ -70,6 +70,7 @@ func (tm *TaskManager) RunTask(taskId string, f ProcessFunc) error {
 	tm.Lock()
 	task := tm.Tasks[taskId]
 	if task == nil {
+		// similar task does not exist at the moment
 		task = &Task{Finished: make(chan struct{}), Func: &f}
 		tm.Tasks[taskId] = task
 		tm.Unlock()
@@ -77,6 +78,7 @@ func (tm *TaskManager) RunTask(taskId string, f ProcessFunc) error {
 		<-task.Finished
 		tm.Delete(taskId)
 	} else {
+		// task is being done by another process
 		tm.Unlock()
 		<-task.Finished
 	}
