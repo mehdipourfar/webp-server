@@ -20,7 +20,7 @@ Simple and minimal image server capable of storing, resizing, converting, and ca
 
 
 ## Quickstart
-Run `webp-server` docker.
+Run a docker container of `webp-server`.
 ```sh
 docker run -d -v webp_server_volume:/var/lib/webp-server --name webp-server -e TOKEN='MY_STRONG_TOKEN' -p 127.0.0.1:8080:8080 ms68/webp-server
 ```
@@ -32,11 +32,25 @@ curl -H 'Token: MY_STRONG_TOKEN' -X POST -F 'image_file=@/path/to/image.jpg' htt
 # this api will return an image_id
 ```
 
-Open this url in your browser.
+Open these urls in your browser.
 
 ```
-http://127.0.0.1:8080/image/width=500,height=500/{image_id}
+http://127.0.0.1:8080/image/width=500,height=500,quality=100/{image_id}
+http://127.0.0.1:8080/image/width=300,height=300,quality=90/{image_id}
 ```
+
+For supporting more image sizes and qualities, you should edit the config file which resides in `webp_server_volume`:
+
+``` sh
+docker volume ls -f name=webp_server_volume --format "{{ .Mountpoint }}"
+```
+
+And then, restart the server:
+
+``` sh
+docker container restart webp-server
+```
+
 
 
 ## FAQ
@@ -193,3 +207,8 @@ server {
 }
 
 ```
+
+## Security Checklist
+    * Set `debug` config to `false` value in production.
+    * Narrow down `valid_image_qualities` and `valid_image_sizes` to the values you really want.
+    * From the outside of the server, `webp-server` address should not be accessible, and users should only be able to see the `/image/` path through your reverse proxy.
