@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/valyala/fasthttp"
+	"time"
 )
 
 func CreateServer(config *Config) *fasthttp.Server {
@@ -18,5 +19,6 @@ func CreateServer(config *Config) *fasthttp.Server {
 		ErrorHandler:          handler.handleErrors,
 		NoDefaultServerHeader: true,
 		MaxRequestBodySize:    config.MaxUploadedImageSize * 1024 * 1024,
+		ReadTimeout:           time.Duration(5 * time.Second),
 	}
 }
