@@ -130,7 +130,7 @@ There is an example configuration file [example-config.yml](https://github.com/m
 
 * `token`: The token that your backend application should send in the request header for upload and delete operations.
 
-    * `default_image_quality`: When converting images, `webp-server` uses this value for conversion quality in case the user omits the quality option in the request. The default value is 95. By decreasing this value, size and quality of the image will be decreased.
+* `default_image_quality`: When converting images, `webp-server` uses this value for conversion quality in case the user omits the quality option in the request. The default value is 95. By decreasing this value, size and quality of the image will be decreased.
 
 * `valid_image_qualities`: List of integer values from 10 to 100 which will be
 accepted from users as the quality option.
