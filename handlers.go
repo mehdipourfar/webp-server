@@ -8,18 +8,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/teris-io/shortid"
 	"github.com/valyala/bytebufferpool"
 	"github.com/valyala/fasthttp"
 	"regexp"
 )
-
-type Handler struct {
-	Config             *Config
-	CacheControlHeader []byte
-	TaskManager        *TaskManager
-}
 
 var (
 	CT_JPEG = "image/jpeg"
@@ -47,6 +42,29 @@ var (
 	// This variable makes us be able to mock Convert function in tests
 	ConvertFunction = Convert
 )
+
+type Handler struct {
+	Config             *Config
+	CacheControlHeader []byte
+	TaskManager        *TaskManager
+}
+
+func CreateServer(config *Config) *fasthttp.Server {
+	handler := &Handler{Config: config}
+	if config.HttpCacheTTL == 0 {
+		handler.CacheControlHeader = []byte("private, no-cache, no-store, must-revalidate")
+	} else {
+		handler.CacheControlHeader = []byte(fmt.Sprintf("max-age=%d", config.HttpCacheTTL))
+	}
+	handler.TaskManager = NewTaskManager(config.ConvertConcurrency)
+	return &fasthttp.Server{
+		Handler:               handler.handleRequests,
+		ErrorHandler:          handler.handleErrors,
+		NoDefaultServerHeader: true,
+		MaxRequestBodySize:    config.MaxUploadedImageSize * 1024 * 1024,
+		ReadTimeout:           time.Duration(5 * time.Second),
+	}
+}
 
 func jsonResponse(ctx *fasthttp.RequestCtx, status int, body []byte) {
 	ctx.SetStatusCode(status)
