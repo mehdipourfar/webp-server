@@ -4,7 +4,9 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 func runServer(config *Config) {
@@ -12,16 +14,26 @@ func runServer(config *Config) {
 
 	log.Printf("Starting server on %s", config.ServerAddress)
 
-	var err error
-	if strings.HasPrefix(config.ServerAddress, "unix:") {
-		socketPath := strings.Replace(config.ServerAddress, "unix:", "", -1)
-		defer os.Remove(socketPath)
-		err = server.ListenAndServeUNIX(socketPath, os.ModeSocket|0666)
-	} else {
-		err = server.ListenAndServe(config.ServerAddress)
-	}
-	if err != nil {
-		log.Println(err)
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		var err error
+		if strings.HasPrefix(config.ServerAddress, "unix:") {
+			socketPath := strings.Replace(config.ServerAddress, "unix:", "", -1)
+			defer os.Remove(socketPath)
+			err = server.ListenAndServeUNIX(socketPath, os.ModeSocket|0666)
+		} else {
+			err = server.ListenAndServe(config.ServerAddress)
+		}
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+	<-done
+	log.Print("Graceful Shutdown")
+	if err := server.Shutdown(); err != nil {
+		log.Fatal(err)
 	}
 }
 
