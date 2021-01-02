@@ -27,7 +27,7 @@ func runServer(config *Config) {
 			err = server.ListenAndServe(config.ServerAddress)
 		}
 		if err != nil {
-			log.Println(err)
+			log.Fatalf("Listen error: %v", err)
 		}
 	}()
 	<-done
