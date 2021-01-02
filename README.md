@@ -20,24 +20,20 @@ Simple and minimal image server capable of storing, resizing, converting, and ca
 
 
 ## Quickstart
-Run `webp-server` docker.
-```sh
-docker run -d -v webp_server_volume:/var/lib/webp-server --name webp-server -e TOKEN='MY_STRONG_TOKEN' -p 127.0.0.1:8080:8080 ms68/webp-server
-```
-Upload an image:
+    Run `webp-server` with docker.
+    ```sh
+        docker run -d -v webp_server_volume:/var/lib/webp-server --name webp-server -e TOKEN='MY_STRONG_TOKEN' -p 127.0.0.1:8080:8080 ms68/webp-server
+    ```
+    Upload an image:
+    ``` sh
+    curl -H 'Token: MY_STRONG_TOKEN' -X POST -F 'image_file=@/path/to/image.jpg' http://127.0.0.1:8080/upload/
+    # this api will return an image_id
+    ```
 
-``` sh
-curl -H 'Token: MY_STRONG_TOKEN' -X POST -F 'image_file=@/path/to/image.jpg' http://127.0.0.1:8080/upload/
-
-# this api will return an image_id
-```
-
-Open this url in your browser.
-
-```
-http://127.0.0.1:8080/image/width=500,height=500/{image_id}
-```
-
+    Open this url in your browser.
+    ```
+    http://127.0.0.1:8080/image/width=500,height=500,fit=contain/(image_id)
+    ```
 
 ## FAQ
 * ### What is webp-server?
