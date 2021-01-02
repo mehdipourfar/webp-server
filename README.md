@@ -209,6 +209,6 @@ server {
 ```
 
 ## Security Checklist
-    * Set `debug` config to `false` value in production.
-    * Narrow down `valid_image_qualities` and `valid_image_sizes` to the values you really want.
-    * From the outside of the server, `webp-server` address should not be accessible, and users should only be able to see the `/image/` path through your reverse proxy.
+* Set `debug` config to `false` value in production.
+* Narrow down `valid_image_qualities` and `valid_image_sizes` to the values you really want.
+* From the outside of the server, `webp-server` address should not be accessible, and users should only be able to see the `/image/` path through your reverse proxy.
