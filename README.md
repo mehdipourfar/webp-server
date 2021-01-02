@@ -6,9 +6,21 @@ Simple and minimal image server capable of storing, resizing, converting, and ca
 </p>
 
 
+## Contents
+
+- [FAQ](#fq)
+- [Installation](#installation)
+  - [Docker](#docker)
+  - [Build From Source](#build-from-source)
+- [Configuration](#configuration)
+- [Backend APIs](#backend-apis)
+- [Frontend APIs](#frontend-apis)
+- [Reverse Proxy](#reverse-proxy)
+
+
 ## FAQ
 * ### What is webp-server?
-  `webp-server` is a dynamic image resizer and format converter server built on top of [libvips](https://github.com/libvips/libvips) and [fasthttp](https://github.com/valyala/fasthttp). Backend developers can run this program on their server machines and upload images to it instead of storing them. It will return an `image_id` which needs to be saved on a database by the backend application (on a `varchar` field with a length of at least 12).
+  `webp-server` is a dynamic image resizer and format converter server built on top of [libvips](https://github.com/libvips/libvips), [bimg](https://github.com/h2non/bimg), and [fasthttp](https://github.com/valyala/fasthttp). Backend developers can run this program on their server machines and upload images to it instead of storing them. It will return an `image_id` which needs to be saved on a database by the backend application (on a `varchar` field with a length of at least 12).
   By using that `image_id`, web clients can request images from `webp-server` and get them in the appropriate size and format.
 
     Here is an example request URL for an image cropped to 500x500 size.
@@ -38,15 +50,9 @@ Simple and minimal image server capable of storing, resizing, converting, and ca
 * ### What is the advantage of using `webp-server` instead of similar projects?
   It is simple and minimal and has been designed to work along with the backend applications for serving images of websites in WebP format. It does not support all kinds of manipulations that one can do with images. It does a few things and tries to do them perfectly.
 
-## Dependencies
-[bimg](https://github.com/h2non/bimg) is a Golang library that communicates with `libvips` through C bindings. Since `webp-server` uses `bimg` for image conversion, you need to install `libvips-dev` as a dependency.
-```sh
-sudo apt install libvips-dev
-```
 
-## Up And Running
-There are two methods for running `webp-server`. Either use docker or build it from the source.
-
+## Installation
+There are two methods for running `webp-server`. Either use docker or build it yourself:
 
 ### Docker
 
@@ -70,14 +76,13 @@ export PATH=$PATH:/usr/local/go/bin
 go get -u -v github.com/mehdipourfar/webp-server
 sudo cp $HOME/go/bin/webp-server /usr/bin/
 
+
+# Download and edit `example-config.yml` to your desired config
 wget https://raw.githubusercontent.com/mehdipourfar/webp-server/master/example-config.yml
 
-```
-
-Then edit `example-config.yml` to your desired configs and run the server:
-
-``` sh
+# Run the server:
 webp-server -config example-config.yml
+
 ```
 
 
