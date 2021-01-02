@@ -162,10 +162,10 @@ func Convert(inputPath, outputPath string, params *ImageParams) error {
 	buffer := bytebufferpool.Get()
 	defer bytebufferpool.Put(buffer)
 	_, err = buffer.ReadFrom(f)
+	f.Close()
 	if err != nil {
 		return err
 	}
-	f.Close()
 
 	img := bimg.NewImage(buffer.B)
 	size, err := img.Size()
