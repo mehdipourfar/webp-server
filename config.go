@@ -48,6 +48,10 @@ func ParseConfig(file io.Reader) *Config {
 		log.Fatalf("Invalid Config File: %v\n", err)
 	}
 
+	if token := os.Getenv("WEBP_SERVER_TOKEN"); len(token) != 0 {
+		cfg.Token = token
+	}
+
 	if cfg.DataDir == "" {
 		log.Fatalf("Set data_directory in your config file.")
 	}

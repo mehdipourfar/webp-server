@@ -31,26 +31,31 @@ ENV GO111MODULE=on
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
-
 COPY . .
-
 RUN go test -race
+RUN go build -a -o ${GOPATH}/bin/webp-server github.com/mehdipourfar/webp-server
 
-RUN go build -a -o ${GOPATH}/bin/webp-server \
-        github.com/mehdipourfar/webp-server
 
 FROM debian:buster-slim
 
-
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /go/bin/webp-server /usr/local/bin/webp-server
-
+COPY ./docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
         apt-get install --no-install-recommends -y \
-        libglib2.0-0 libexif12 libjpeg62-turbo libpng16-16 \
+        libexpat1 libglib2.0-0 libexif12 libjpeg62-turbo libpng16-16 \
         libwebp6 libwebpmux3 libwebpdemux2 fftw3 liborc-0.4-0 && \
         apt-get autoremove -y && \
         apt-get autoclean && \
         apt-get clean && \
-        rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+        rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*; \
+        groupadd -r -g 999 webp-server && useradd -r -g webp-server -u 999 --home-dir=/var/lib/webp-server webp-server; \
+        mkdir -p /var/lib/webp-server; \
+        chown webp-server:webp-server /var/lib/webp-server;
+
+VOLUME /var/lib/webp-server
+COPY ./docker-config.yml /var/lib/webp-server/config.yml
+ENTRYPOINT ["./docker-entrypoint.sh"]
+USER webp-server
+EXPOSE 8080

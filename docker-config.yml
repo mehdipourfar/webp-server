@@ -1,0 +1,14 @@
+data_directory: /var/lib/webp-server/ # should be an absolute path
+server_address: 0.0.0.0:8080
+default_image_quality: 95
+valid_image_qualities:
+  - 90
+  - 95
+  - 100
+valid_image_sizes:
+  - 300x300
+  - 500x500
+max_uploaded_image_size: 4 # in megabytes
+http_cache_ttl: 2592000 # in seconds. default is 1 month.
+log_path: null # default is null and logs to console
+debug: false

@@ -34,6 +34,7 @@ debug:
 convert_concurrency:
   3
 `)
+	defer os.RemoveAll("/tmp/webp-server")
 	cfg := ParseConfig(config_file)
 	expected := &Config{
 		DataDir:              "/tmp/webp-server/",
@@ -52,5 +53,18 @@ convert_concurrency:
 		t.Errorf("Expected config to be\n%+v\nbut result is\n%+v\n",
 			expected, cfg)
 	}
-	os.RemoveAll("/tmp/webp-server")
+
+	if tok := os.Getenv("WEBP_SERVER_TOKEN"); len(tok) == 0 {
+		os.Setenv("WEBP_SERVER_TOKEN", "123")
+		defer os.Unsetenv("WEBP_SERVER_TOKEN")
+	}
+	_, err := config_file.Seek(0, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	cfg = ParseConfig(config_file)
+
+	if cfg.Token != os.Getenv("WEBP_SERVER_TOKEN") {
+		t.Errorf("Unexpected server token %s", cfg.Token)
+	}
 }
