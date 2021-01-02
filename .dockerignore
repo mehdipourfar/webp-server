@@ -4,5 +4,7 @@ docs/
 *.out
 Dockerfile
 README.md
+History.md
+LICENSE
 example-config.yml
 webp_server.service
