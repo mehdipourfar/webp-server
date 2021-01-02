@@ -1,4 +1,4 @@
-# webp-server (UNDER DEVELOPMENT)
+# webp-server
 Simple and minimal image server capable of storing, resizing, converting, and caching images. You can quickly find out how it works by looking at the flowchart below.
 
 <p align="center">
@@ -44,16 +44,42 @@ Simple and minimal image server capable of storing, resizing, converting, and ca
 sudo apt install libvips-dev
 ```
 
+## Up And Running
+There are two methods for running `webp-server`. Either use docker or build it from the source.
 
-## Installation
+
+### Docker
+
 ```sh
-go get -u github.com/mehdipourfar/webp-server
+docker run -d -v webp_server_volume:/var/lib/webp-server --name webp-server -e TOKEN='MY_STRONG_TOKEN' -p 127.0.0.1:8080:8080 ms68/webp-server
 ```
 
-## Running
-```sh
-webp-server -config /path/to/config.yml
+### Build From Source
+
+``` sh
+sudo apt install libvips-dev git
+
+
+## in Case you don't have Golang installed on your system.
+
+wget https://golang.org/dl/go1.15.6.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.15.6.linux-amd64.tar.gz
+export GOPATH=$HOME/go
+export PATH=$PATH:/usr/local/go/bin
+
+go get -u -v github.com/mehdipourfar/webp-server
+sudo cp $HOME/go/bin/webp-server /usr/bin/
+
+wget https://raw.githubusercontent.com/mehdipourfar/webp-server/master/example-config.yml
+
 ```
+
+Then edit `example-config.yml` to your desired configs and run the server:
+
+``` sh
+webp-server -config example-config.yml
+```
+
 
 ## Configuration
 There is an example configuration file [example-config.yml](https://github.com/mehdipourfar/webp-server/blob/master/example-config.yml) in the code directory. Here is the list of parameters that you can configure:

@@ -66,7 +66,7 @@ LABEL maintainer="mehdipourfar@gmail.com" \
         org.label-schema.url="https://github.com/mehdipourfar/webp-server" \
         org.label-schema.vcs-url="https://github.com/mehdipourfar/webp-server" \
         org.label-schema.version="${WEBP_SERVER_VERSION}" \
-        org.label-schema.docker.cmd="docker run -d -v webp_server_volume:/var/lib/webp-server --name webp-server -e TOKEN='MY_STRONG_TOKEN' -p 8080:8080 webp-server"
+        org.label-schema.docker.cmd="docker run -d -v webp_server_volume:/var/lib/webp-server --name webp-server -e TOKEN='MY_STRONG_TOKEN' -p 127.0.0.1:8080:8080 webp-server"
 
 
 VOLUME /var/lib/webp-server
