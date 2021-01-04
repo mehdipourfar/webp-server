@@ -210,6 +210,21 @@ func TestGetParamsFromUri(t *testing.T) {
 			},
 			err: nil,
 		},
+		{
+			testId:       17,
+			imageId:      "NG4uQBa2f",
+			options:      "q=m",
+			webpAccepted: true,
+			expectedParams: &ImageParams{
+				ImageId:      "NG4uQBa2f",
+				Fit:          "contain",
+				Width:        0,
+				Height:       0,
+				Quality:      95,
+				WebpAccepted: true,
+			},
+			err: fmt.Errorf("Quality should be integer"),
+		},
 	}
 
 	for _, tc := range tt {
@@ -406,7 +421,7 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "scale-down",
+			name: "scale-down-width-gt-heigh",
 			imageParams: &ImageParams{
 				Width:        1200,
 				Fit:          "scale-down",
@@ -422,6 +437,25 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 				Type:  bimg.WEBP,
 				Crop:  false,
 				Embed: false,
+			},
+		},
+		{
+			name: "scale-down-height-gt-width",
+			imageParams: &ImageParams{
+				Height:       1200,
+				Fit:          "scale-down",
+				Quality:      80,
+				WebpAccepted: true,
+			},
+			imageSize: &bimg.ImageSize{
+				Width:  400,
+				Height: 900,
+			},
+			options: &bimg.Options{
+				Height: 900,
+				Type:   bimg.WEBP,
+				Crop:   false,
+				Embed:  false,
 			},
 		},
 	}

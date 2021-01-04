@@ -369,6 +369,9 @@ func Test404(t *testing.T) {
 	is.Equal(resp.StatusCode(), 404)
 	is.Equal(string(resp.Header.ContentType()), "application/json")
 	is.Equal(resp.Body(), ERROR_ADDRESS_NOT_FOUND)
+	req = createRequest("http://test/image/w=500/", "GET", nil, nil)
+	resp = serve(server, req)
+	is.Equal(resp.StatusCode(), 404)
 }
 
 func TestFetchFuncMethodShouldBeGet(t *testing.T) {
