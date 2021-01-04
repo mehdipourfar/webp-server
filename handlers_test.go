@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/matryer/is"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttputil"
 	bimg "gopkg.in/h2non/bimg.v1"
@@ -123,24 +124,19 @@ func getTestConfig() *Config {
 }
 
 func TestHealthFunc(t *testing.T) {
+	is := is.New(t)
 	server := CreateServer(&Config{})
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI("http://test/health/")
 	defer fasthttp.ReleaseRequest(req)
 
 	resp := serve(server, req)
-
-	status := resp.Header.StatusCode()
-	if status != 200 {
-		t.Errorf("Expected 200 but received %d", status)
-	}
-	body := string(resp.Body())
-	if body != `{"status": "ok"}` {
-		t.Errorf("Invalid body: %s", body)
-	}
+	is.Equal(resp.Header.StatusCode(), 200)
+	is.Equal(resp.Body(), []byte(`{"status": "ok"}`))
 }
 
 func TestUploadFunc(t *testing.T) {
+	is := is.New(t)
 	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
@@ -221,33 +217,24 @@ func TestUploadFunc(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("Test upload errors %s", tc.name), func(t *testing.T) {
+			is := is.NewRelaxed(t)
 			req := createUploadRequest(
 				tc.method, tc.token,
 				tc.imageParamName, tc.imagePath,
 			)
 			resp := serve(server, req)
-			status := resp.Header.StatusCode()
 			body := resp.Body()
-			if ct := string(resp.Header.ContentType()); ct != "application/json" {
-				t.Fatalf("Expected json response")
+			is.Equal(resp.Header.ContentType(), []byte("application/json"))
+			is.Equal(resp.Header.StatusCode(), tc.expectedStatus)
+			if tc.expectedError != nil {
+				is.Equal(body, tc.expectedError)
 			}
-			if status != tc.expectedStatus {
-				t.Fatalf("Expected %d status but got %d",
-					tc.expectedStatus, status)
-			}
-			if tc.expectedError != nil &&
-				!bytes.Equal(body, tc.expectedError) {
-				t.Fatalf("Expected %s as error but got %s",
-					string(tc.expectedError), string(body))
-			}
-			if status != 200 {
+			if resp.Header.StatusCode() != 200 {
 				errResult := &ErrorResult{}
 				err := json.Unmarshal(body, errResult)
-				if err != nil || errResult.Error == "" {
-					t.Fatalf("Could not parse error: (%s) %v", string(body), err)
-				}
+				is.NoErr(err)
+				is.True(errResult.Error != "")
 			}
-
 		})
 	}
 }
@@ -336,21 +323,16 @@ func TestFetchFunc(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("Test upload errors %s", tc.name), func(t *testing.T) {
+			is := is.NewRelaxed(t)
 			uploadReq := createUploadRequest(
 				"POST", TOKEN,
 				"image_file", tc.uploadFilePath,
 			)
 			uploadResp := serve(server, uploadReq)
-
-			if uploadResp.Header.StatusCode() != 200 {
-				t.Fatalf("Expected upload status 200 but got %d",
-					uploadResp.Header.StatusCode())
-			}
+			is.Equal(uploadResp.Header.StatusCode(), 200)
 			uploadResult := &UploadResult{}
 			err := json.Unmarshal(uploadResp.Body(), uploadResult)
-			if err != nil {
-				t.Fatal(err)
-			}
+			is.Equal(err, nil)
 			fetchUri := fmt.Sprintf("http://test/image/%s/%s", tc.fetchOpts, uploadResult.ImageId)
 			fetchReq := createRequest(fetchUri, "GET", nil, nil)
 			if tc.webpAccepted {
@@ -358,94 +340,61 @@ func TestFetchFunc(t *testing.T) {
 			}
 			fetchResp := serve(server, fetchReq)
 			status := fetchResp.Header.StatusCode()
-			if status != tc.expectedStatus {
-				if status != 200 {
-					t.Errorf("%q", fetchResp.Body())
-				}
-				t.Fatalf("Expected fetch status %d but got %d.",
-					tc.expectedStatus, status)
-			}
-			ct := string(fetchResp.Header.ContentType())
-			if ct != tc.expectedCt {
-				t.Fatalf("Expected %s as content type but got %s",
-					tc.expectedCt, ct)
-			}
+			is.Equal(status, tc.expectedStatus)
+			is.Equal(string(fetchResp.Header.ContentType()), tc.expectedCt)
 			body := fetchResp.Body()
 			if status != 200 {
-				if !bytes.Equal(tc.expectedError, body) {
-					t.Fatalf("Expected %s as error but got %s",
-						string(tc.expectedError), string(body))
-				}
+				is.Equal(tc.expectedError, body)
 				errResult := &ErrorResult{}
 				err := json.Unmarshal(body, errResult)
-				if err != nil || errResult.Error == "" {
-					t.Fatalf("Could not parse error: (%s) %v", string(body), err)
-				}
+				is.NoErr(err)
+				is.True(errResult.Error != "")
 			} else {
 				img := bimg.NewImage(body)
 				size, err := img.Size()
-				if err != nil {
-					t.Fatal(err)
-				}
-				if size.Width != tc.expectedWidth {
-					t.Fatalf("Expected width=%d but is %d", tc.expectedWidth, size.Width)
-				}
-				if size.Height != tc.expectedHeight {
-					t.Fatalf("Expected height=%d but is %d", tc.expectedHeight, size.Height)
-				}
+				is.NoErr(err)
+				is.Equal(size.Width, tc.expectedWidth)
+				is.Equal(size.Height, tc.expectedHeight)
 			}
 		})
 	}
 }
 
 func Test404(t *testing.T) {
+	is := is.New(t)
 	config := &Config{}
 	server := CreateServer(config)
 	req := createRequest("http://test/hey", "GET", nil, nil)
 	resp := serve(server, req)
-	if resp.StatusCode() != 404 {
-		t.Fatalf("Expected 404 but got %d", resp.StatusCode())
-	}
-	ct := string(resp.Header.ContentType())
-	if ct != "application/json" {
-		t.Fatalf("Expected content type application/json but got %s", ct)
-	}
-	if !bytes.Equal(resp.Body(), ERROR_ADDRESS_NOT_FOUND) {
-		t.Fatalf("Unexpected body: %s", string(resp.Body()))
-	}
-
+	is.Equal(resp.StatusCode(), 404)
+	is.Equal(string(resp.Header.ContentType()), "application/json")
+	is.Equal(resp.Body(), ERROR_ADDRESS_NOT_FOUND)
 }
 
 func TestFetchFuncMethodShouldBeGet(t *testing.T) {
+	is := is.New(t)
 	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
 	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "POST", nil, nil)
 	resp := serve(server, req)
-	if resp.StatusCode() != 405 {
-		t.Fatalf("Expected 405 but got %d", resp.StatusCode())
-	}
+	is.Equal(resp.StatusCode(), 405)
 }
 
 func TestFetchFuncWithInvalidImageId(t *testing.T) {
+	is := is.New(t)
 	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
 	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "GET", nil, nil)
 	resp := serve(server, req)
-	if resp.StatusCode() != 404 {
-		t.Fatalf("Expected 404 but got %d", resp.StatusCode())
-	}
-	ct := string(resp.Header.ContentType())
-	if ct != "application/json" {
-		t.Fatalf("Expected content type application/json but got %s", ct)
-	}
-	if !bytes.Equal(resp.Body(), ERROR_IMAGE_NOT_FOUND) {
-		t.Fatalf("Unexpected body: %s", string(resp.Body()))
-	}
+	is.Equal(resp.StatusCode(), 404)
+	is.Equal(string(resp.Header.ContentType()), "application/json")
+	is.Equal(resp.Body(), ERROR_IMAGE_NOT_FOUND)
 }
 
 func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
+	is := is.New(t)
 	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
@@ -455,15 +404,10 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 	)
 	uploadResp := serve(server, uploadReq)
 
-	if uploadResp.Header.StatusCode() != 200 {
-		t.Fatalf("Expected upload status 200 but got %d",
-			uploadResp.Header.StatusCode())
-	}
+	is.Equal(uploadResp.Header.StatusCode(), 200)
 	uploadResult := &UploadResult{}
 	err := json.Unmarshal(uploadResp.Body(), uploadResult)
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 	fetchUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageId)
 	fetchReq := createRequest(fetchUri, "GET", nil, nil)
 	imageParams := &ImageParams{
@@ -478,25 +422,18 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 
 	serve(server, fetchReq)
 	buf, err := bimg.Read(cachePath)
-	if err != nil {
-		t.Fatalf("Couldn't read the cache")
-	}
+	is.NoErr(err)
 	img := bimg.NewImage(buf)
 	size, _ := img.Size()
-	if size.Width != 500 || size.Height != 500 {
-		t.Fatal("Cache is invalid")
-	}
-	if os.Remove(imagePath) != nil {
-		t.Fatal("Couldn't remove image")
-	}
+	is.Equal(size.Width, 500)
+	is.Equal(size.Height, 500)
+	is.NoErr(os.Remove(imagePath))
 	resp := serve(server, fetchReq)
-	if resp.StatusCode() != 200 {
-		t.Fatal("Server didn't read the cache")
-	}
-
+	is.Equal(resp.StatusCode(), 200)
 }
 
 func TestDeleteHandler(t *testing.T) {
+	is := is.New(t)
 	config := getTestConfig()
 	server := CreateServer(config)
 	defer os.RemoveAll(config.DataDir)
@@ -506,16 +443,10 @@ func TestDeleteHandler(t *testing.T) {
 	)
 	uploadResp := serve(server, uploadReq)
 
-	if uploadResp.Header.StatusCode() != 200 {
-		t.Fatalf("Expected upload status 200 but got %d",
-			uploadResp.Header.StatusCode())
-	}
+	is.Equal(uploadResp.Header.StatusCode(), 200)
 	uploadResult := &UploadResult{}
 	err := json.Unmarshal(uploadResp.Body(), uploadResult)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	is.NoErr(err)
 	tt := []struct {
 		name           string
 		method         string
@@ -568,40 +499,31 @@ func TestDeleteHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("Test delete errors %s", tc.name), func(t *testing.T) {
+			is := is.NewRelaxed(t)
 			uri := fmt.Sprintf("http://test/delete/%s", tc.imageId)
 			req := createRequest(uri, tc.method, tc.token, nil)
 			resp := serve(server, req)
-			status := resp.StatusCode()
-			if status != tc.expectedStatus {
-				t.Fatalf("Expected %d but got %d", tc.expectedStatus, status)
-			}
-			ct := string(resp.Header.ContentType())
-			if ct != "application/json" {
-				t.Fatalf("Expected content type to be application/json but is %s", ct)
-			}
+			is.Equal(resp.StatusCode(), tc.expectedStatus)
+			is.Equal(string(resp.Header.ContentType()), "application/json")
 			body := resp.Body()
-			if !bytes.Equal(body, tc.expectedBody) {
-				t.Fatalf("Expected %s as body but got %s",
-					string(tc.expectedBody), string(body))
-			}
+			is.Equal(body, tc.expectedBody)
 			if body != nil {
 				errResult := &ErrorResult{}
 				err := json.Unmarshal(body, errResult)
-				if err != nil || errResult.Error == "" {
-					t.Fatalf("Could not parse error: (%s) %v", string(body), err)
-				}
+				is.Equal(err, nil)
+				is.True(errResult.Error != "")
 			}
 		})
 	}
 
 	imagePath := ImageIdToFilePath(config.DataDir, uploadResult.ImageId)
-	if _, err := os.Stat(imagePath); !os.IsNotExist(err) {
-		t.Fatal("Expected image to be deleted")
-	}
+	_, err = os.Stat(imagePath)
+	is.True(os.IsNotExist(err))
 
 }
 
 func TestGettingOriginalImage(t *testing.T) {
+	is := is.New(t)
 	config := getTestConfig()
 	server := CreateServer(config)
 
@@ -613,40 +535,27 @@ func TestGettingOriginalImage(t *testing.T) {
 	uploadResult := &UploadResult{}
 	uploadResp := serve(server, uploadReq)
 	err := json.Unmarshal(uploadResp.Body(), uploadResult)
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 	uri := fmt.Sprintf("http://test/image/%s", "123456789")
 	req := createRequest(uri, "GET", nil, nil)
 	resp := serve(server, req)
-	if resp.StatusCode() != 404 {
-		t.Fatalf("Expected 404 but got %d", resp.StatusCode())
-	}
-	if ct := string(resp.Header.ContentType()); ct != "application/json" {
-		t.Fatalf("Expected content type to be application/json but is %s", ct)
-	}
-	if !bytes.Equal(resp.Body(), ERROR_IMAGE_NOT_FOUND) {
-		t.Fatalf("Expected error %s but got %s", string(ERROR_IMAGE_NOT_FOUND), string(resp.Body()))
-	}
+	is.Equal(resp.StatusCode(), 404)
+	is.Equal(string(resp.Header.ContentType()), "application/json")
+	is.Equal(resp.Body(), ERROR_IMAGE_NOT_FOUND)
 	uri = fmt.Sprintf("http://test/image/%s", uploadResult.ImageId)
 	req = createRequest(uri, "GET", nil, nil)
 	resp = serve(server, req)
-	if resp.StatusCode() != 200 {
-		t.Fatalf("Expected 200 but got %d", resp.StatusCode())
-	}
-	if ct := string(resp.Header.ContentType()); ct != "image/png" {
-		t.Fatalf("Expected content type to be image/png but is %s", ct)
-	}
+	is.Equal(resp.StatusCode(), 200)
+	is.Equal(string(resp.Header.ContentType()), "image/png")
 	img := bimg.NewImage(resp.Body())
 	size, _ := img.Size()
-	if size.Width != 1680 && size.Height != 1050 {
-		t.Fatalf("Expected image size to be 1680x1050 but is %dx%d",
-			size.Width, size.Height)
-	}
+	is.Equal(size.Width, 1680)
+	is.Equal(size.Height, 1050)
 
 }
 
 func TestConcurentConversionRequests(t *testing.T) {
+	is := is.New(t)
 	config := getTestConfig()
 	server := CreateServer(config)
 
@@ -658,9 +567,7 @@ func TestConcurentConversionRequests(t *testing.T) {
 	uploadResult := &UploadResult{}
 	uploadResp := serve(server, uploadReq)
 	err := json.Unmarshal(uploadResp.Body(), uploadResult)
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 
 	var wg sync.WaitGroup
 	reqUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageId)
@@ -679,19 +586,15 @@ func TestConcurentConversionRequests(t *testing.T) {
 			defer wg.Done()
 			fetchReq := createRequest(reqUri, "GET", nil, nil)
 			resp := serve(server, fetchReq)
-			if resp.StatusCode() != 200 {
-				t.Errorf("expected status 200 but got %d", resp.StatusCode())
-			}
+			is.Equal(resp.StatusCode(), 200)
 		}()
 	}
 	wg.Wait()
-
-	if functionCalls != 1 {
-		t.Fatalf("Expected convert and cache func to be called once but called %d times", functionCalls)
-	}
+	is.Equal(functionCalls, int64(1))
 }
 
 func TestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
+	is := is.New(t)
 	config := getTestConfig()
 	server := CreateServer(config)
 
@@ -703,19 +606,12 @@ func TestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
 	uploadResult := &UploadResult{}
 	uploadResp := serve(server, uploadReq)
 	err := json.Unmarshal(uploadResp.Body(), uploadResult)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	is.NoErr(err)
 	uri := fmt.Sprintf("http://test/image/w=800,h=900,q=72/%s", uploadResult.ImageId)
 	req := createRequest(uri, "GET", nil, nil)
 	resp := serve(server, req)
-	if resp.StatusCode() != 400 {
-		t.Fatalf("Expected 400 but got %d", resp.StatusCode())
-	}
+	is.Equal(resp.StatusCode(), 400)
 	config.Debug = true
 	resp = serve(server, req)
-	if resp.StatusCode() != 200 {
-		t.Fatalf("Expected 200 but got %d: %q", resp.StatusCode(), resp.Body())
-	}
+	is.Equal(resp.StatusCode(), 200)
 }

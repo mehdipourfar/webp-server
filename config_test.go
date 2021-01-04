@@ -2,12 +2,14 @@ package main
 
 import (
 	"os"
-	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/matryer/is"
 )
 
 func TestParseConfig(t *testing.T) {
+	is := is.New(t)
 	config_file := strings.NewReader(`
 data_directory:
   /tmp/webp-server/
@@ -49,22 +51,13 @@ convert_concurrency:
 		ConvertConcurrency:   3,
 	}
 
-	if !reflect.DeepEqual(cfg, expected) {
-		t.Errorf("Expected config to be\n%+v\nbut result is\n%+v\n",
-			expected, cfg)
-	}
-
+	is.Equal(cfg, expected)
 	if tok := os.Getenv("WEBP_SERVER_TOKEN"); len(tok) == 0 {
 		os.Setenv("WEBP_SERVER_TOKEN", "123")
 		defer os.Unsetenv("WEBP_SERVER_TOKEN")
 	}
 	_, err := config_file.Seek(0, 0)
-	if err != nil {
-		t.Error(err)
-	}
+	is.NoErr(err)
 	cfg = ParseConfig(config_file)
-
-	if cfg.Token != os.Getenv("WEBP_SERVER_TOKEN") {
-		t.Errorf("Unexpected server token %s", cfg.Token)
-	}
+	is.Equal(cfg.Token, os.Getenv("WEBP_SERVER_TOKEN"))
 }

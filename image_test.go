@@ -2,13 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/matryer/is"
 	bimg "gopkg.in/h2non/bimg.v1"
 	"testing"
 )
-
-func (p1 *ImageParams) IsEqual(p2 *ImageParams) bool {
-	return p1.GetMd5() == p2.GetMd5()
-}
 
 func (p *ImageParams) String() string {
 	return fmt.Sprintf(
@@ -30,14 +27,13 @@ func bimgOptsAreEqual(o1 *bimg.Options, o2 *bimg.Options) bool {
 }
 
 func TestImagePath(t *testing.T) {
+	is := is.New(t)
 	imagePath := ImageIdToFilePath("/tmp/media", "FyBmW7C2f")
-
-	if imagePath != "/tmp/media/images/y/mW/FyBmW7C2f" {
-		t.Errorf("Something wrong with image file path: %s", imagePath)
-	}
+	is.Equal(imagePath, "/tmp/media/images/y/mW/FyBmW7C2f")
 }
 
 func TestCachePath(t *testing.T) {
+	is := is.New(t)
 	params := &ImageParams{
 		ImageId:      "NG4uQBa2f",
 		Width:        100,
@@ -47,17 +43,11 @@ func TestCachePath(t *testing.T) {
 		WebpAccepted: true,
 	}
 
-	md5Sum := "c64dda22268336d2c246899c2bc79005"
-
-	if value := params.GetMd5(); value != md5Sum {
-		t.Errorf("Something wrong with md5: %s", value)
-	}
-
-	filePath := params.GetCachePath("/tmp/media/")
-
-	if filePath != "/tmp/media/caches/5/00/NG4uQBa2f-c64dda22268336d2c246899c2bc79005" {
-		t.Errorf("Something wrong with cache file path: %s", filePath)
-	}
+	is.Equal(params.GetMd5(), "c64dda22268336d2c246899c2bc79005")
+	is.Equal(
+		params.GetCachePath("/tmp/media/"),
+		"/tmp/media/caches/5/00/NG4uQBa2f-c64dda22268336d2c246899c2bc79005",
+	)
 }
 
 func TestGetParamsFromUri(t *testing.T) {
@@ -224,6 +214,7 @@ func TestGetParamsFromUri(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("ImageParamsFromUri %d", tc.testId), func(t *testing.T) {
+			is := is.NewRelaxed(t)
 			resultParams, err := CreateImageParams(
 				tc.imageId,
 				tc.options,
@@ -232,17 +223,10 @@ func TestGetParamsFromUri(t *testing.T) {
 			)
 
 			if tc.err != nil {
-				if err == nil {
-					t.Fatalf("Expected erro (%v) but no error occurred", tc.err)
-				}
-				if tc.err.Error() != err.Error() {
-					t.Fatalf("Expected error %v but got %v", tc.err, err)
-				}
+				is.True(err != nil)
+				is.Equal(tc.err.Error(), err.Error())
 			} else {
-				if !tc.expectedParams.IsEqual(resultParams) {
-					t.Fatalf("Expected %v as imageParams but result is %v",
-						tc.expectedParams, resultParams)
-				}
+				is.Equal(tc.expectedParams, resultParams)
 			}
 		})
 	}
@@ -445,7 +429,6 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			opts := tc.imageParams.ToBimgOptions(tc.imageSize)
-
 			if !bimgOptsAreEqual(tc.options, opts) {
 				t.Fatalf("Expected %s but result is %s",
 					bimgOptsToString(tc.options),

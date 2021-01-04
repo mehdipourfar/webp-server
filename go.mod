@@ -3,6 +3,7 @@ module github.com/mehdipourfar/webp-server
 go 1.15
 
 require (
+	github.com/matryer/is v1.4.0
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasthttp v1.18.0
