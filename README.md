@@ -1,6 +1,10 @@
 # webp-server
 Simple and minimal image server capable of storing, resizing, converting, and caching images. You can quickly find out how it works by looking at the flowchart below.
 
+[![codecov](https://codecov.io/gh/mehdipourfar/webp-server/branch/master/graph/badge.svg?token=CYJANFYQIM)](https://codecov.io/gh/mehdipourfar/webp-server)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mehdipourfar/webp-server)](https://goreportcard.com/report/github.com/mehdipourfar/webp-server)
+[![Release](https://img.shields.io/github/v/release/mehdipourfar/webp-server?sort=semver)](https://github.com/mehdipourfar/webp-server/releases)
+
 <p align="center">
   <img src="https://github.com/mehdipourfar/webp-server/raw/master/docs/flowchart.jpg" alt="Flowchart"/>
 </p>
@@ -12,6 +16,7 @@ Simple and minimal image server capable of storing, resizing, converting, and ca
 - [FAQ](#faq)
 - [Installation](#installation)
   - [Docker](#docker)
+  - [Download Binary](#download-binary)
   - [Build From Source](#build-from-source)
 - [Configuration](#configuration)
 - [Backend APIs](#backend-apis)
@@ -35,8 +40,8 @@ curl -H 'Token: MY_STRONG_TOKEN' -X POST -F 'image_file=@/path/to/image.jpg' htt
 Open these urls in your browser.
 
 ```
-http://127.0.0.1:8080/image/width=500,height=500,quality=100/{image_id}
-http://127.0.0.1:8080/image/width=300,height=300,quality=90/{image_id}
+http://127.0.0.1:8080/image/width=500,height=500,fit=contain,quality=100/{image_id}
+http://127.0.0.1:8080/image/width=300,height=300,fit=cover,quality=90/{image_id}
 ```
 
 For supporting more image sizes and qualities, you should edit the config file which resides in `webp_server_volume`:
@@ -93,6 +98,13 @@ There are two methods for running `webp-server`. Either use docker or build it y
 
 ```sh
 docker run -d -v webp_server_volume:/var/lib/webp-server --name webp-server -e TOKEN='MY_STRONG_TOKEN' -p 127.0.0.1:8080:8080 ms68/webp-server
+```
+
+### Download Binary
+
+``` sh
+sudo apt install libvips
+wget https://github.com/mehdipourfar/webp-server/releases/download/v1.0.0/webp-server_1.0.0_linux_amd64.tar.gz
 ```
 
 ### Build From Source
