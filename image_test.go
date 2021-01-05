@@ -319,7 +319,7 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "cover_portait",
+			name: "cover_portrait",
 			imageParams: &ImageParams{
 				Width:        300,
 				Height:       300,

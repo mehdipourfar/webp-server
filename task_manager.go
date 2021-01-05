@@ -6,7 +6,7 @@ import (
 )
 
 /*
-   Main responsiblity of TaskManager is to prevent from
+   Main responsibility of TaskManager is to prevent from
    thundering herd problem in image conversion process.
    When an image is recently uploaded, and multiple users
    request it with the same filters, we should make sure
