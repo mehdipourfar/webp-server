@@ -29,11 +29,11 @@ var (
 
 	ErrorMethodNotAllowed = []byte(`{"error": "Method not allowed"}`)
 	ErrorImageNotProvided = []byte(`{"error": "image_file field not provided"}`)
-	ErrorFileIsNotImage  = []byte(`{"error": "Provided file is not an accepted image"}`)
-	ErrorInvalidToken      = []byte(`{"error": "Invalid Token"}`)
+	ErrorFileIsNotImage   = []byte(`{"error": "Provided file is not an accepted image"}`)
+	ErrorInvalidToken     = []byte(`{"error": "Invalid Token"}`)
 	ErrorImageNotFound    = []byte(`{"error": "Image not found"}`)
 	ErrorAddressNotFound  = []byte(`{"error": "Address not found"}`)
-	ErrorServerError             = []byte(`{"error": "Internal Server Error"}`)
+	ErrorServerError      = []byte(`{"error": "Internal Server Error"}`)
 
 	// This variable makes us be able to mock convert function in tests
 	convertFunction = convert
