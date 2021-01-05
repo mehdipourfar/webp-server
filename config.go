@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -38,14 +38,14 @@ func GetDefaultConfig() *Config {
 
 }
 
-func ParseConfig(file io.Reader) *Config {
+func ParseConfig(file io.Reader) (*Config, error) {
 	cfg := GetDefaultConfig()
 	buf, err := ioutil.ReadAll(file)
 	if err != nil {
-		log.Fatalf("%+v\n", err)
+		return nil, fmt.Errorf("%+v\n", err)
 	}
 	if err := yaml.Unmarshal(buf, &cfg); err != nil {
-		log.Fatalf("Invalid Config File: %v\n", err)
+		return nil, fmt.Errorf("Invalid Config File: %v", err)
 	}
 
 	if token := os.Getenv("WEBP_SERVER_TOKEN"); len(token) != 0 {
@@ -53,35 +53,35 @@ func ParseConfig(file io.Reader) *Config {
 	}
 
 	if cfg.DataDir == "" {
-		log.Fatalf("Set data_directory in your config file.")
+		return nil, fmt.Errorf("Set data_directory in your config file.")
 	}
 
 	if !filepath.IsAbs(cfg.DataDir) {
-		log.Fatalf("Absolute path for data_dir is needed but got: %s", cfg.DataDir)
+		return nil, fmt.Errorf("Absolute path for data_dir needed but got: %s", cfg.DataDir)
 	}
 
 	if len(cfg.LogPath) > 0 && !filepath.IsAbs(cfg.LogPath) {
-		log.Fatalf("Absolute path for log_path is needed but got: %s", cfg.DataDir)
+		return nil, fmt.Errorf("Absolute path for log_path needed but got: %s", cfg.LogPath)
 	}
 
 	if err := os.MkdirAll(cfg.DataDir, 0755); err != nil {
-		log.Fatalf("%+v\n", err)
+		return nil, fmt.Errorf("%+v\n", err)
 	}
 
 	sizePattern := regexp.MustCompile("([0-9]{1,4})x([0-9]{1,4})")
 	for _, size := range cfg.ValidImageSizes {
 		match := sizePattern.FindAllString(size, -1)
 		if len(match) != 1 {
-			log.Fatalf("Image size %s is not valid. Try use WIDTHxHEIGHT format.", size)
+			return nil, fmt.Errorf("Image size %s is not valid. Try use WIDTHxHEIGHT format.", size)
 		}
 	}
 
 	if cfg.DefaultImageQuality < 10 || cfg.DefaultImageQuality > 100 {
-		log.Fatal("Default image quality should be 10 < q < 100.")
+		return nil, fmt.Errorf("Default image quality should be 10 < q < 100.")
 	}
 
 	if cfg.ConvertConcurrency <= 0 {
-		log.Fatal("Convert Concurrency should be greater than zero")
+		return nil, fmt.Errorf("Convert Concurrency should be greater than zero")
 	}
-	return cfg
+	return cfg, nil
 }

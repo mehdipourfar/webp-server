@@ -119,7 +119,9 @@ func getTestConfig() *Config {
 	}
 	cfg.DataDir = dir
 	cfg.Token = string(TOKEN)
+	cfg.DefaultImageQuality = 90
 	cfg.ValidImageSizes = []string{"500x200", "500x500", "100x100"}
+	cfg.ValidImageQualities = []int{80, 90, 95, 100}
 	return cfg
 }
 
@@ -319,6 +321,17 @@ func TestFetchFunc(t *testing.T) {
 			expectedCt:     CT_JSON,
 			expectedWidth:  0,
 			expectedHeight: 0,
+		},
+		{
+			name:           "acceptable quality",
+			uploadFilePath: TEST_FILE_JPEG,
+			fetchOpts:      "w=500,h=500,q=80",
+			webpAccepted:   false,
+			expectedStatus: 200,
+			expectedError:  nil,
+			expectedCt:     CT_JPEG,
+			expectedWidth:  500,
+			expectedHeight: 313,
 		},
 	}
 	for _, tc := range tt {

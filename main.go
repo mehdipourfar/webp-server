@@ -47,8 +47,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	config := ParseConfig(file)
+	config, err := ParseConfig(file)
 	file.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if config.LogPath != "" {
 		logFile, err := os.OpenFile(config.LogPath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
