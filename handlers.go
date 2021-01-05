@@ -17,30 +17,26 @@ import (
 )
 
 var (
-	CT_JPEG = "image/jpeg"
-	CT_WEBP = "image/webp"
-	CT_JSON = "application/json"
+	PathHealth = []byte("/health/")
+	PathUpload = []byte("/upload/")
+	PathImage  = []byte("/image/")
+	PathDelete = []byte("/delete/")
 
-	PATH_HEALTH = []byte("/health/")
-	PATH_UPLOAD = []byte("/upload/")
-	PATH_IMAGE  = []byte("/image/")
-	PATH_DELETE = []byte("/delete/")
+	ImageRegex  = regexp.MustCompile("/image/((?P<options>[0-9a-z,=-]+)/)?(?P<imageID>[0-9a-zA-Z_-]{9,12})$")
+	DeleteRegex = regexp.MustCompile("/delete/(?P<imageID>[0-9a-zA-Z_-]{9,12})$")
 
-	CACHE_CONTROL = []byte("Cache-Control")
+	CacheControlKey = []byte("Cache-Control")
 
-	ERROR_METHOD_NOT_ALLOWED = []byte(`{"error": "Method not allowed"}`)
-	ERROR_IMAGE_NOT_PROVIDED = []byte(`{"error": "image_file field not provided"}`)
-	ERROR_FILE_IS_NOT_IMAGE  = []byte(`{"error": "Provided file is not an accepted image"}`)
-	ERROR_INVALID_TOKEN      = []byte(`{"error": "Invalid Token"}`)
-	ERROR_IMAGE_NOT_FOUND    = []byte(`{"error": "Image not found"}`)
-	ERROR_ADDRESS_NOT_FOUND  = []byte(`{"error": "Address not found"}`)
-	ERROR_SERVER             = []byte(`{"error": "Internal Server Error"}`)
+	ErrorMethodNotAllowed = []byte(`{"error": "Method not allowed"}`)
+	ErrorImageNotProvided = []byte(`{"error": "image_file field not provided"}`)
+	ErrorFileIsNotImage  = []byte(`{"error": "Provided file is not an accepted image"}`)
+	ErrorInvalidToken      = []byte(`{"error": "Invalid Token"}`)
+	ErrorImageNotFound    = []byte(`{"error": "Image not found"}`)
+	ErrorAddressNotFound  = []byte(`{"error": "Address not found"}`)
+	ErrorServerError             = []byte(`{"error": "Internal Server Error"}`)
 
-	IMAGE_URI_REGEX  = regexp.MustCompile("/image/((?P<options>[0-9a-z,=-]+)/)?(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
-	DELETE_URI_REGEX = regexp.MustCompile("/delete/(?P<imageId>[0-9a-zA-Z_-]{9,12})$")
-
-	// This variable makes us be able to mock Convert function in tests
-	ConvertFunction = Convert
+	// This variable makes us be able to mock convert function in tests
+	convertFunction = convert
 )
 
 type Handler struct {
@@ -49,12 +45,12 @@ type Handler struct {
 	TaskManager        *TaskManager
 }
 
-func CreateServer(config *Config) *fasthttp.Server {
+func createServer(config *Config) *fasthttp.Server {
 	handler := &Handler{Config: config}
-	if config.HttpCacheTTL == 0 {
+	if config.HTTPCacheTTL == 0 {
 		handler.CacheControlHeader = []byte("private, no-cache, no-store, must-revalidate")
 	} else {
-		handler.CacheControlHeader = []byte(fmt.Sprintf("max-age=%d", config.HttpCacheTTL))
+		handler.CacheControlHeader = []byte(fmt.Sprintf("max-age=%d", config.HTTPCacheTTL))
 	}
 	handler.TaskManager = NewTaskManager(config.ConvertConcurrency)
 	return &fasthttp.Server{
@@ -68,7 +64,7 @@ func CreateServer(config *Config) *fasthttp.Server {
 
 func jsonResponse(ctx *fasthttp.RequestCtx, status int, body []byte) {
 	ctx.SetStatusCode(status)
-	ctx.SetContentType(CT_JSON)
+	ctx.SetContentType("application/json")
 	if body != nil {
 		ctx.SetBody(body)
 	}
@@ -79,7 +75,7 @@ func jsonResponse(ctx *fasthttp.RequestCtx, status int, body []byte) {
 func handlePanic(ctx *fasthttp.RequestCtx) {
 	if err := recover(); err != nil {
 		ctx.ResetBody()
-		jsonResponse(ctx, 500, ERROR_SERVER)
+		jsonResponse(ctx, 500, ErrorServerError)
 		log.Println(err)
 	}
 }
@@ -90,16 +86,16 @@ func (handler *Handler) handleRequests(ctx *fasthttp.RequestCtx) {
 
 	path := ctx.Path()
 
-	if bytes.HasPrefix(path, PATH_IMAGE) {
+	if bytes.HasPrefix(path, PathImage) {
 		handler.handleFetch(ctx)
-	} else if bytes.Equal(path, PATH_UPLOAD) {
+	} else if bytes.Equal(path, PathUpload) {
 		handler.handleUpload(ctx)
-	} else if bytes.HasPrefix(path, PATH_DELETE) {
+	} else if bytes.HasPrefix(path, PathDelete) {
 		handler.handleDelete(ctx)
-	} else if bytes.Equal(path, PATH_HEALTH) {
+	} else if bytes.Equal(path, PathHealth) {
 		jsonResponse(ctx, 200, []byte(`{"status": "ok"}`))
 	} else {
-		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
+		jsonResponse(ctx, 404, ErrorAddressNotFound)
 	}
 }
 
@@ -110,59 +106,59 @@ func (handler *Handler) tokenIsValid(ctx *fasthttp.RequestCtx) bool {
 
 func (handler *Handler) handleUpload(ctx *fasthttp.RequestCtx) {
 	if !ctx.IsPost() {
-		jsonResponse(ctx, 405, ERROR_METHOD_NOT_ALLOWED)
+		jsonResponse(ctx, 405, ErrorMethodNotAllowed)
 		return
 	}
 
 	if !handler.tokenIsValid(ctx) {
-		jsonResponse(ctx, 401, ERROR_INVALID_TOKEN)
+		jsonResponse(ctx, 401, ErrorInvalidToken)
 		return
 	}
 
 	fileHeader, err := ctx.FormFile("image_file")
 	if err != nil {
-		jsonResponse(ctx, 400, ERROR_IMAGE_NOT_PROVIDED)
+		jsonResponse(ctx, 400, ErrorImageNotProvided)
 		return
 	}
-	if imageValidated := ValidateImage(fileHeader); !imageValidated {
-		jsonResponse(ctx, 400, ERROR_FILE_IS_NOT_IMAGE)
+	if imageValidated := validateImage(fileHeader); !imageValidated {
+		jsonResponse(ctx, 400, ErrorFileIsNotImage)
 		return
 	}
 
-	imageId := shortid.GetDefault().MustGenerate()
-	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
+	imageID := shortid.GetDefault().MustGenerate()
+	imagePath := getFilePathFromImageID(handler.Config.DataDir, imageID)
 	if err := os.MkdirAll(filepath.Dir(imagePath), 0755); err != nil {
 		panic(err)
 	}
 	if err := fasthttp.SaveMultipartFile(fileHeader, imagePath); err != nil {
 		panic(err)
 	}
-	jsonResponse(ctx, 200, []byte(fmt.Sprintf(`{"image_id": "%s"}`, imageId)))
+	jsonResponse(ctx, 200, []byte(fmt.Sprintf(`{"image_id": "%s"}`, imageID)))
 }
 
 func (handler *Handler) handleDelete(ctx *fasthttp.RequestCtx) {
 	if !ctx.IsDelete() {
-		jsonResponse(ctx, 405, ERROR_METHOD_NOT_ALLOWED)
+		jsonResponse(ctx, 405, ErrorMethodNotAllowed)
 		return
 	}
 
 	if !handler.tokenIsValid(ctx) {
-		jsonResponse(ctx, 401, ERROR_INVALID_TOKEN)
+		jsonResponse(ctx, 401, ErrorInvalidToken)
 		return
 	}
 
-	match := DELETE_URI_REGEX.FindSubmatch(ctx.Path())
+	match := DeleteRegex.FindSubmatch(ctx.Path())
 	if len(match) != 2 {
-		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
+		jsonResponse(ctx, 404, ErrorAddressNotFound)
 		return
 	}
-	imageId := string(match[1])
-	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
+	imageID := string(match[1])
+	imagePath := getFilePathFromImageID(handler.Config.DataDir, imageID)
 
 	err := os.Remove(imagePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
+			jsonResponse(ctx, 404, ErrorImageNotFound)
 			return
 		}
 		panic(err)
@@ -172,28 +168,28 @@ func (handler *Handler) handleDelete(ctx *fasthttp.RequestCtx) {
 
 func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	if !ctx.IsGet() {
-		jsonResponse(ctx, 405, ERROR_METHOD_NOT_ALLOWED)
+		jsonResponse(ctx, 405, ErrorMethodNotAllowed)
 		return
 	}
-	options, imageId := parseImageUri(ctx.Path())
-	if len(imageId) == 0 {
-		jsonResponse(ctx, 404, ERROR_ADDRESS_NOT_FOUND)
+	options, imageID := parseImageURI(ctx.Path())
+	if len(imageID) == 0 {
+		jsonResponse(ctx, 404, ErrorAddressNotFound)
 		return
 	}
 
 	if len(options) == 0 {
 		// user wants original file
-		imagePath := ImageIdToFilePath(handler.Config.DataDir, imageId)
+		imagePath := getFilePathFromImageID(handler.Config.DataDir, imageID)
 		if ok := handler.serveFileFromDisk(ctx, imagePath, true); !ok {
-			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
+			jsonResponse(ctx, 404, ErrorImageNotFound)
 		}
 		return
 	}
 
 	webpAccepted := bytes.Contains(ctx.Request.Header.Peek("accept"), []byte("webp"))
 
-	imageParams, err := CreateImageParams(
-		imageId,
+	imageParams, err := createImageParams(
+		imageID,
 		options,
 		webpAccepted,
 		handler.Config,
@@ -206,33 +202,33 @@ func (handler *Handler) handleFetch(ctx *fasthttp.RequestCtx) {
 	}
 
 	if webpAccepted {
-		ctx.SetContentType(CT_WEBP)
+		ctx.SetContentType("image/webp")
 	} else {
-		ctx.SetContentType(CT_JPEG)
+		ctx.SetContentType("image/jpeg")
 	}
 
-	cacheFilePath := imageParams.GetCachePath(handler.Config.DataDir)
+	cacheFilePath := imageParams.getCachePath(handler.Config.DataDir)
 	if ok := handler.serveFileFromDisk(ctx, cacheFilePath, false); ok {
 		// request served from cache
 		return
 	}
 	// cache didn't exist
 
-	if err := ValidateImageParams(imageParams, handler.Config); err != nil {
+	if err := validateImageParams(imageParams, handler.Config); err != nil {
 		errorBody := []byte(fmt.Sprintf(`{"error": "%v"}`, err))
 		jsonResponse(ctx, 400, errorBody)
 		return
 	}
 
-	imagePath := ImageIdToFilePath(handler.Config.DataDir, imageParams.ImageId)
+	imagePath := getFilePathFromImageID(handler.Config.DataDir, imageParams.ImageID)
 
-	err = handler.TaskManager.RunTask(imageParams.GetMd5(), func() error {
-		return ConvertFunction(imagePath, cacheFilePath, imageParams)
+	err = handler.TaskManager.RunTask(imageParams.getMd5(), func() error {
+		return convertFunction(imagePath, cacheFilePath, imageParams)
 	})
 
 	if err != nil {
 		if os.IsNotExist(err) {
-			jsonResponse(ctx, 404, ERROR_IMAGE_NOT_FOUND)
+			jsonResponse(ctx, 404, ErrorImageNotFound)
 			return
 		}
 		panic(err)
@@ -268,21 +264,21 @@ func (handler *Handler) serveFileFromDisk(ctx *fasthttp.RequestCtx, filePath str
 	}
 	f.Close()
 	ctx.SetBody(buffer.B)
-	ctx.Response.Header.SetBytesKV(CACHE_CONTROL, handler.CacheControlHeader)
+	ctx.Response.Header.SetBytesKV(CacheControlKey, handler.CacheControlHeader)
 	if setContentType {
 		ctx.SetContentType(http.DetectContentType(buffer.B))
 	}
 	return true
 }
 
-func parseImageUri(requestPath []byte) (options, imageId string) {
+func parseImageURI(requestPath []byte) (options, imageID string) {
 	// options are in the format below:
 	// w=200,h=200,fit=cover,quality=90
 
-	match := IMAGE_URI_REGEX.FindStringSubmatch(string(requestPath))
+	match := ImageRegex.FindStringSubmatch(string(requestPath))
 	if len(match) != 4 {
 		return
 	}
-	options, imageId = match[2], match[3]
+	options, imageID = match[2], match[3]
 	return
 }

@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+//Config is global configuration of the server
 type Config struct {
 	DataDir              string   `yaml:"data_directory"`
 	DefaultImageQuality  int      `yaml:"default_image_quality"`
@@ -20,26 +21,26 @@ type Config struct {
 	ValidImageSizes      []string `yaml:"valid_image_sizes"`
 	ValidImageQualities  []int    `yaml:"valid_image_qualities"`
 	MaxUploadedImageSize int      `yaml:"max_uploaded_image_size"` // in megabytes
-	HttpCacheTTL         int      `yaml:"http_cache_ttl"`
+	HTTPCacheTTL         int      `yaml:"http_cache_ttl"`
 	LogPath              string   `yaml:"log_path"`
 	Debug                bool     `yaml:"debug"`
 	ConvertConcurrency   int      `yaml:"convert_concurrency"`
 }
 
-func GetDefaultConfig() *Config {
+func getDefaultConfig() *Config {
 	return &Config{
 		DefaultImageQuality:  95,
 		ServerAddress:        "127.0.0.1:8080",
 		ValidImageSizes:      []string{"300x300", "500x500"},
 		MaxUploadedImageSize: 4,
-		HttpCacheTTL:         2592000,
+		HTTPCacheTTL:         2592000,
 		ConvertConcurrency:   runtime.NumCPU(),
 	}
 
 }
 
-func ParseConfig(file io.Reader) (*Config, error) {
-	cfg := GetDefaultConfig()
+func parseConfig(file io.Reader) (*Config, error) {
+	cfg := getDefaultConfig()
 	buf, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, fmt.Errorf("%+v\n", err)

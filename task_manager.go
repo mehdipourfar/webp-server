@@ -5,82 +5,84 @@ import (
 	"sync"
 )
 
-/*
-   Main responsibility of TaskManager is to prevent from
-   thundering herd problem in image conversion process.
-   When an image is recently uploaded, and multiple users
-   request it with the same filters, we should make sure
-   that the image conversion process only happens once.
-   TaskManager also acts a worker pool and prevents from
-   running Convert function in thousands of goroutines.
-*/
-
+//ProcessFunc is the function responsible for handling task
 type ProcessFunc func() error
 
-type Task struct {
-	Finished chan struct{}
-	Func     *ProcessFunc
-	Error    error
+type task struct {
+	finished chan struct{}
+	function *ProcessFunc
+	err      error
 }
 
-func (t *Task) Run() {
+func (t *task) run() {
 	defer func() {
 		if r := recover(); r != nil {
-			t.Error = fmt.Errorf("Task failed: %v", r)
-			close(t.Finished)
+			t.err = fmt.Errorf("Task failed: %v", r)
+			close(t.finished)
 		}
 	}()
 
-	t.Error = (*t.Func)()
-	close(t.Finished)
+	t.err = (*t.function)()
+	close(t.finished)
 }
 
+//TaskManager is responsible for preventing
+//thundering herd problem in image conversion process.
+//When an image is recently uploaded, and multiple users
+//request it with the same filters, we should make sure
+//that the image conversion process only happens once.
+//TaskManager also acts a worker pool and prevents from
+//running Convert function in thousands of goroutines.
 type TaskManager struct {
-	Tasks   map[string]*Task
-	Request chan *Task
+	tasks   map[string]*task
+	request chan *task
 	sync.Mutex
 }
 
+//NewTaskManager takes the number of background workers
+//and creates a new Task manager with spawned workers
 func NewTaskManager(workersCount int) *TaskManager {
 	t := &TaskManager{
-		Tasks:   make(map[string]*Task),
-		Request: make(chan *Task, 10),
+		tasks:   make(map[string]*task),
+		request: make(chan *task, 10),
 	}
-	t.StartWorkers(workersCount)
+	t.startWorkers(workersCount)
 	return t
 }
 
-func (tm *TaskManager) StartWorkers(count int) {
+func (tm *TaskManager) startWorkers(count int) {
 	for i := 0; i < count; i++ {
 		go func() {
-			for task := range tm.Request {
-				task.Run()
+			for t := range tm.request {
+				t.run()
 			}
 		}()
 	}
 }
 
-func (tm *TaskManager) Delete(taskId string) {
+func (tm *TaskManager) clear(taskID string) {
 	tm.Lock()
-	delete(tm.Tasks, taskId)
+	delete(tm.tasks, taskID)
 	tm.Unlock()
 }
 
-func (tm *TaskManager) RunTask(taskId string, f ProcessFunc) error {
+//RunTask takes a uniqe taskID and a processing function
+//and runs the function in the background
+func (tm *TaskManager) RunTask(taskID string, f ProcessFunc) error {
 	tm.Lock()
-	task := tm.Tasks[taskId]
-	if task == nil {
+	t := tm.tasks[taskID]
+	if t == nil {
 		// similar task does not exist at the moment
-		task = &Task{Finished: make(chan struct{}), Func: &f}
-		tm.Tasks[taskId] = task
+		t = &task{finished: make(chan struct{}), function: &f}
+		tm.tasks[taskID] = t
 		tm.Unlock()
-		tm.Request <- task
-		<-task.Finished
-		tm.Delete(taskId)
+		tm.request <- t
+		<-t.finished
+		tm.clear(taskID)
 	} else {
 		// task is being done by another process
 		tm.Unlock()
-		<-task.Finished
+		<-t.finished
 	}
-	return task.Error
+	return t.err
 }

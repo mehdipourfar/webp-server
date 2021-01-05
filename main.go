@@ -10,7 +10,7 @@ import (
 )
 
 func runServer(config *Config) {
-	server := CreateServer(config)
+	server := createServer(config)
 
 	log.Printf("Starting server on %s", config.ServerAddress)
 
@@ -47,7 +47,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	config, err := ParseConfig(file)
+	config, err := parseConfig(file)
 	file.Close()
 	if err != nil {
 		log.Fatal(err)

@@ -26,7 +26,7 @@ var (
 )
 
 type UploadResult struct {
-	ImageId string `json:"image_id"`
+	ImageID string `json:"image_id"`
 }
 
 type ErrorResult struct {
@@ -112,7 +112,7 @@ func serve(server *fasthttp.Server, req *fasthttp.Request) *fasthttp.Response {
 }
 
 func getTestConfig() *Config {
-	cfg := GetDefaultConfig()
+	cfg := getDefaultConfig()
 	dir, err := ioutil.TempDir("", "test")
 	if err != nil {
 		panic(err)
@@ -127,7 +127,7 @@ func getTestConfig() *Config {
 
 func TestHealthFunc(t *testing.T) {
 	is := is.New(t)
-	server := CreateServer(&Config{})
+	server := createServer(&Config{})
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI("http://test/health/")
 	defer fasthttp.ReleaseRequest(req)
@@ -140,7 +140,7 @@ func TestHealthFunc(t *testing.T) {
 func TestUploadFunc(t *testing.T) {
 	is := is.New(t)
 	config := getTestConfig()
-	server := CreateServer(config)
+	server := createServer(config)
 	defer os.RemoveAll(config.DataDir)
 
 	tt := []struct {
@@ -159,7 +159,7 @@ func TestUploadFunc(t *testing.T) {
 			imageParamName: "image_file",
 			token:          nil,
 			expectedStatus: 405,
-			expectedError:  ERROR_METHOD_NOT_ALLOWED,
+			expectedError:  ErrorMethodNotAllowed,
 		},
 		{
 			name:           "Missing Token",
@@ -168,7 +168,7 @@ func TestUploadFunc(t *testing.T) {
 			imageParamName: "image_file",
 			token:          nil,
 			expectedStatus: 401,
-			expectedError:  ERROR_INVALID_TOKEN,
+			expectedError:  ErrorInvalidToken,
 		},
 		{
 			name:           "Invalid Param Name",
@@ -177,7 +177,7 @@ func TestUploadFunc(t *testing.T) {
 			imageParamName: "image_fileee",
 			token:          TOKEN,
 			expectedStatus: 400,
-			expectedError:  ERROR_IMAGE_NOT_PROVIDED,
+			expectedError:  ErrorImageNotProvided,
 		},
 		{
 			name:           "Successful Jpeg Upload",
@@ -213,7 +213,7 @@ func TestUploadFunc(t *testing.T) {
 			imageParamName: "image_file",
 			token:          TOKEN,
 			expectedStatus: 400,
-			expectedError:  ERROR_FILE_IS_NOT_IMAGE,
+			expectedError:  ErrorFileIsNotImage,
 		},
 	}
 
@@ -243,7 +243,7 @@ func TestUploadFunc(t *testing.T) {
 
 func TestFetchFunc(t *testing.T) {
 	config := getTestConfig()
-	server := CreateServer(config)
+	server := createServer(config)
 	defer os.RemoveAll(config.DataDir)
 	tt := []struct {
 		name           string
@@ -263,7 +263,7 @@ func TestFetchFunc(t *testing.T) {
 			webpAccepted:   false,
 			expectedStatus: 200,
 			expectedError:  nil,
-			expectedCt:     CT_JPEG,
+			expectedCt:     "image/jpeg",
 			expectedWidth:  500,
 			expectedHeight: 500,
 		},
@@ -274,7 +274,7 @@ func TestFetchFunc(t *testing.T) {
 			webpAccepted:   true,
 			expectedStatus: 200,
 			expectedError:  nil,
-			expectedCt:     CT_WEBP,
+			expectedCt:     "image/webp",
 			expectedWidth:  500,
 			expectedHeight: 500,
 		},
@@ -285,7 +285,7 @@ func TestFetchFunc(t *testing.T) {
 			webpAccepted:   false,
 			expectedStatus: 200,
 			expectedError:  nil,
-			expectedCt:     CT_JPEG,
+			expectedCt:     "image/jpeg",
 			expectedWidth:  500,
 			expectedHeight: 500,
 		},
@@ -296,7 +296,7 @@ func TestFetchFunc(t *testing.T) {
 			webpAccepted:   false,
 			expectedStatus: 400,
 			expectedError:  []byte(`{"error": "Invalid options: Width should be integer"}`),
-			expectedCt:     CT_JSON,
+			expectedCt:     "application/json",
 			expectedWidth:  500,
 			expectedHeight: 500,
 		},
@@ -307,7 +307,7 @@ func TestFetchFunc(t *testing.T) {
 			webpAccepted:   false,
 			expectedStatus: 400,
 			expectedError:  []byte(`{"error": "size=300x200 is not supported by server. Contact server admin."}`),
-			expectedCt:     CT_JSON,
+			expectedCt:     "application/json",
 			expectedWidth:  0,
 			expectedHeight: 0,
 		},
@@ -318,7 +318,7 @@ func TestFetchFunc(t *testing.T) {
 			webpAccepted:   false,
 			expectedStatus: 400,
 			expectedError:  []byte(`{"error": "quality=60 is not supported by server. Contact server admin."}`),
-			expectedCt:     CT_JSON,
+			expectedCt:     "application/json",
 			expectedWidth:  0,
 			expectedHeight: 0,
 		},
@@ -329,7 +329,7 @@ func TestFetchFunc(t *testing.T) {
 			webpAccepted:   false,
 			expectedStatus: 200,
 			expectedError:  nil,
-			expectedCt:     CT_JPEG,
+			expectedCt:     "image/jpeg",
 			expectedWidth:  500,
 			expectedHeight: 313,
 		},
@@ -346,7 +346,7 @@ func TestFetchFunc(t *testing.T) {
 			uploadResult := &UploadResult{}
 			err := json.Unmarshal(uploadResp.Body(), uploadResult)
 			is.Equal(err, nil)
-			fetchUri := fmt.Sprintf("http://test/image/%s/%s", tc.fetchOpts, uploadResult.ImageId)
+			fetchUri := fmt.Sprintf("http://test/image/%s/%s", tc.fetchOpts, uploadResult.ImageID)
 			fetchReq := createRequest(fetchUri, "GET", nil, nil)
 			if tc.webpAccepted {
 				fetchReq.Header.SetBytesKV([]byte("accept"), []byte("webp"))
@@ -376,12 +376,12 @@ func TestFetchFunc(t *testing.T) {
 func Test404(t *testing.T) {
 	is := is.New(t)
 	config := &Config{}
-	server := CreateServer(config)
+	server := createServer(config)
 	req := createRequest("http://test/hey", "GET", nil, nil)
 	resp := serve(server, req)
 	is.Equal(resp.StatusCode(), 404)
 	is.Equal(string(resp.Header.ContentType()), "application/json")
-	is.Equal(resp.Body(), ERROR_ADDRESS_NOT_FOUND)
+	is.Equal(resp.Body(), ErrorAddressNotFound)
 	req = createRequest("http://test/image/w=500/", "GET", nil, nil)
 	resp = serve(server, req)
 	is.Equal(resp.StatusCode(), 404)
@@ -390,29 +390,29 @@ func Test404(t *testing.T) {
 func TestFetchFuncMethodShouldBeGet(t *testing.T) {
 	is := is.New(t)
 	config := getTestConfig()
-	server := CreateServer(config)
+	server := createServer(config)
 	defer os.RemoveAll(config.DataDir)
 	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "POST", nil, nil)
 	resp := serve(server, req)
 	is.Equal(resp.StatusCode(), 405)
 }
 
-func TestFetchFuncWithInvalidImageId(t *testing.T) {
+func TestFetchFuncWithInvalidImageID(t *testing.T) {
 	is := is.New(t)
 	config := getTestConfig()
-	server := CreateServer(config)
+	server := createServer(config)
 	defer os.RemoveAll(config.DataDir)
 	req := createRequest("http://test/image/w=500,h=500/NG4uQBa2f", "GET", nil, nil)
 	resp := serve(server, req)
 	is.Equal(resp.StatusCode(), 404)
 	is.Equal(string(resp.Header.ContentType()), "application/json")
-	is.Equal(resp.Body(), ERROR_IMAGE_NOT_FOUND)
+	is.Equal(resp.Body(), ErrorImageNotFound)
 }
 
 func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 	is := is.New(t)
 	config := getTestConfig()
-	server := CreateServer(config)
+	server := createServer(config)
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
 		"POST", TOKEN,
@@ -424,17 +424,17 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 	uploadResult := &UploadResult{}
 	err := json.Unmarshal(uploadResp.Body(), uploadResult)
 	is.NoErr(err)
-	fetchUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageId)
+	fetchUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageID)
 	fetchReq := createRequest(fetchUri, "GET", nil, nil)
 	imageParams := &ImageParams{
-		ImageId: uploadResult.ImageId,
+		ImageID: uploadResult.ImageID,
 		Width:   500,
 		Height:  500,
 		Quality: config.DefaultImageQuality,
-		Fit:     FIT_COVER,
+		Fit:     FitCover,
 	}
-	cachePath := imageParams.GetCachePath(config.DataDir)
-	imagePath := ImageIdToFilePath(config.DataDir, uploadResult.ImageId)
+	cachePath := imageParams.getCachePath(config.DataDir)
+	imagePath := getFilePathFromImageID(config.DataDir, uploadResult.ImageID)
 
 	serve(server, fetchReq)
 	buf, err := bimg.Read(cachePath)
@@ -451,7 +451,7 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 func TestDeleteHandler(t *testing.T) {
 	is := is.New(t)
 	config := getTestConfig()
-	server := CreateServer(config)
+	server := createServer(config)
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
 		"POST", TOKEN,
@@ -466,7 +466,7 @@ func TestDeleteHandler(t *testing.T) {
 	tt := []struct {
 		name           string
 		method         string
-		imageId        string
+		imageID        string
 		token          []byte
 		expectedStatus int
 		expectedBody   []byte
@@ -474,39 +474,39 @@ func TestDeleteHandler(t *testing.T) {
 		{
 			name:           "Invalid Method",
 			method:         "GET",
-			imageId:        "123456789",
+			imageID:        "123456789",
 			token:          nil,
 			expectedStatus: 405,
-			expectedBody:   ERROR_METHOD_NOT_ALLOWED,
+			expectedBody:   ErrorMethodNotAllowed,
 		},
 		{
 			name:           "Invalid Address",
 			method:         "DELETE",
-			imageId:        "123456789",
+			imageID:        "123456789",
 			token:          nil,
 			expectedStatus: 401,
-			expectedBody:   ERROR_INVALID_TOKEN,
+			expectedBody:   ErrorInvalidToken,
 		},
 		{
 			name:           "Invalid Address",
 			method:         "DELETE",
-			imageId:        "123456789/123",
+			imageID:        "123456789/123",
 			token:          TOKEN,
 			expectedStatus: 404,
-			expectedBody:   ERROR_ADDRESS_NOT_FOUND,
+			expectedBody:   ErrorAddressNotFound,
 		},
 		{
 			name:           "Invalid Image",
 			method:         "DELETE",
-			imageId:        "123456789",
+			imageID:        "123456789",
 			token:          TOKEN,
 			expectedStatus: 404,
-			expectedBody:   ERROR_IMAGE_NOT_FOUND,
+			expectedBody:   ErrorImageNotFound,
 		},
 		{
 			name:           "Valid Image",
 			method:         "DELETE",
-			imageId:        uploadResult.ImageId,
+			imageID:        uploadResult.ImageID,
 			token:          TOKEN,
 			expectedStatus: 204,
 			expectedBody:   nil,
@@ -516,7 +516,7 @@ func TestDeleteHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("Test delete errors %s", tc.name), func(t *testing.T) {
 			is := is.NewRelaxed(t)
-			uri := fmt.Sprintf("http://test/delete/%s", tc.imageId)
+			uri := fmt.Sprintf("http://test/delete/%s", tc.imageID)
 			req := createRequest(uri, tc.method, tc.token, nil)
 			resp := serve(server, req)
 			is.Equal(resp.StatusCode(), tc.expectedStatus)
@@ -532,7 +532,7 @@ func TestDeleteHandler(t *testing.T) {
 		})
 	}
 
-	imagePath := ImageIdToFilePath(config.DataDir, uploadResult.ImageId)
+	imagePath := getFilePathFromImageID(config.DataDir, uploadResult.ImageID)
 	_, err = os.Stat(imagePath)
 	is.True(os.IsNotExist(err))
 
@@ -541,7 +541,7 @@ func TestDeleteHandler(t *testing.T) {
 func TestGettingOriginalImage(t *testing.T) {
 	is := is.New(t)
 	config := getTestConfig()
-	server := CreateServer(config)
+	server := createServer(config)
 
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
@@ -557,8 +557,8 @@ func TestGettingOriginalImage(t *testing.T) {
 	resp := serve(server, req)
 	is.Equal(resp.StatusCode(), 404)
 	is.Equal(string(resp.Header.ContentType()), "application/json")
-	is.Equal(resp.Body(), ERROR_IMAGE_NOT_FOUND)
-	uri = fmt.Sprintf("http://test/image/%s", uploadResult.ImageId)
+	is.Equal(resp.Body(), ErrorImageNotFound)
+	uri = fmt.Sprintf("http://test/image/%s", uploadResult.ImageID)
 	req = createRequest(uri, "GET", nil, nil)
 	resp = serve(server, req)
 	is.Equal(resp.StatusCode(), 200)
@@ -573,7 +573,7 @@ func TestGettingOriginalImage(t *testing.T) {
 func TestConcurentConversionRequests(t *testing.T) {
 	is := is.New(t)
 	config := getTestConfig()
-	server := CreateServer(config)
+	server := createServer(config)
 
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
@@ -586,14 +586,14 @@ func TestConcurentConversionRequests(t *testing.T) {
 	is.NoErr(err)
 
 	var wg sync.WaitGroup
-	reqUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageId)
+	reqUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageID)
 
 	var functionCalls int64
 
-	// override ConvertFunction which is used in handleFetch api
-	ConvertFunction = func(inputPath, outputPath string, params *ImageParams) error {
+	// override convertFunction which is used in handleFetch api
+	convertFunction = func(inputPath, outputPath string, params *ImageParams) error {
 		atomic.AddInt64(&functionCalls, 1)
-		return Convert(inputPath, outputPath, params)
+		return convert(inputPath, outputPath, params)
 	}
 
 	for i := 0; i < 10; i++ {
@@ -612,7 +612,7 @@ func TestConcurentConversionRequests(t *testing.T) {
 func TestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
 	is := is.New(t)
 	config := getTestConfig()
-	server := CreateServer(config)
+	server := createServer(config)
 
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
@@ -623,7 +623,7 @@ func TestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
 	uploadResp := serve(server, uploadReq)
 	err := json.Unmarshal(uploadResp.Body(), uploadResult)
 	is.NoErr(err)
-	uri := fmt.Sprintf("http://test/image/w=800,h=900,q=72/%s", uploadResult.ImageId)
+	uri := fmt.Sprintf("http://test/image/w=800,h=900,q=72/%s", uploadResult.ImageID)
 	req := createRequest(uri, "GET", nil, nil)
 	resp := serve(server, req)
 	is.Equal(resp.StatusCode(), 400)

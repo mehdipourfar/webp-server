@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func ValidateImage(header *multipart.FileHeader) bool {
+func validateImage(header *multipart.FileHeader) bool {
 	file, err := header.Open()
 	if err != nil {
 		log.Println(err)
@@ -30,7 +30,7 @@ func ValidateImage(header *multipart.FileHeader) bool {
 	}
 }
 
-func ValidateImageParams(imageParams *ImageParams, config *Config) error {
+func validateImageParams(imageParams *ImageParams, config *Config) error {
 	if config.Debug {
 		return nil
 	}

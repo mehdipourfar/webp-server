@@ -10,7 +10,7 @@ import (
 func (p *ImageParams) String() string {
 	return fmt.Sprintf(
 		"id:%s,width:%d,height:%d,fit:%s,quality:%d,webp_accepted:%t",
-		p.ImageId, p.Width, p.Height, p.Fit, p.Quality, p.WebpAccepted,
+		p.ImageID, p.Width, p.Height, p.Fit, p.Quality, p.WebpAccepted,
 	)
 }
 
@@ -28,14 +28,14 @@ func bimgOptsAreEqual(o1 *bimg.Options, o2 *bimg.Options) bool {
 
 func TestImagePath(t *testing.T) {
 	is := is.New(t)
-	imagePath := ImageIdToFilePath("/tmp/media", "FyBmW7C2f")
+	imagePath := getFilePathFromImageID("/tmp/media", "FyBmW7C2f")
 	is.Equal(imagePath, "/tmp/media/images/y/mW/FyBmW7C2f")
 }
 
 func TestCachePath(t *testing.T) {
 	is := is.New(t)
 	params := &ImageParams{
-		ImageId:      "NG4uQBa2f",
+		ImageID:      "NG4uQBa2f",
 		Width:        100,
 		Height:       100,
 		Fit:          "cover",
@@ -43,9 +43,9 @@ func TestCachePath(t *testing.T) {
 		WebpAccepted: true,
 	}
 
-	is.Equal(params.GetMd5(), "c64dda22268336d2c246899c2bc79005")
+	is.Equal(params.getMd5(), "c64dda22268336d2c246899c2bc79005")
 	is.Equal(
-		params.GetCachePath("/tmp/media/"),
+		params.getCachePath("/tmp/media/"),
 		"/tmp/media/caches/5/00/NG4uQBa2f-c64dda22268336d2c246899c2bc79005",
 	)
 }
@@ -59,7 +59,7 @@ func TestGetParamsFromUri(t *testing.T) {
 
 	tt := []struct {
 		testId         int
-		imageId        string
+		imageID        string
 		options        string
 		webpAccepted   bool
 		expectedParams *ImageParams
@@ -67,11 +67,11 @@ func TestGetParamsFromUri(t *testing.T) {
 	}{
 		{
 			testId:       1,
-			imageId:      "NG4uQBa2f",
+			imageID:      "NG4uQBa2f",
 			options:      "w=500,h=500,fit=contain",
 			webpAccepted: false,
 			expectedParams: &ImageParams{
-				ImageId:      "NG4uQBa2f",
+				ImageID:      "NG4uQBa2f",
 				Fit:          "contain",
 				Width:        500,
 				Height:       500,
@@ -82,11 +82,11 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:       2,
-			imageId:      "NG4uQBa2f",
+			imageID:      "NG4uQBa2f",
 			options:      "w=300,h=300,fit=contain",
 			webpAccepted: false,
 			expectedParams: &ImageParams{
-				ImageId:      "NG4uQBa2f",
+				ImageID:      "NG4uQBa2f",
 				Fit:          "contain",
 				Width:        300,
 				Height:       300,
@@ -97,11 +97,11 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:       3,
-			imageId:      "NG4uQBa2f",
+			imageID:      "NG4uQBa2f",
 			options:      "w=300,h=300,fit=contain",
 			webpAccepted: true,
 			expectedParams: &ImageParams{
-				ImageId:      "NG4uQBa2f",
+				ImageID:      "NG4uQBa2f",
 				Fit:          "contain",
 				Width:        300,
 				Height:       300,
@@ -112,11 +112,11 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:       4,
-			imageId:      "NG4uQBa2f",
+			imageID:      "NG4uQBa2f",
 			options:      "w=300,h=300,fit=cover",
 			webpAccepted: true,
 			expectedParams: &ImageParams{
-				ImageId:      "NG4uQBa2f",
+				ImageID:      "NG4uQBa2f",
 				Fit:          "cover",
 				Width:        300,
 				Height:       300,
@@ -127,11 +127,11 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:       7,
-			imageId:      "NG4uQBa2f",
+			imageID:      "NG4uQBa2f",
 			options:      "w=300,h=300,fit=scale-down",
 			webpAccepted: true,
 			expectedParams: &ImageParams{
-				ImageId:      "NG4uQBa2f",
+				ImageID:      "NG4uQBa2f",
 				Fit:          "scale-down",
 				Width:        300,
 				Height:       300,
@@ -142,11 +142,11 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:       8,
-			imageId:      "NG4uQBa2f",
+			imageID:      "NG4uQBa2f",
 			options:      "w=0,h=0",
 			webpAccepted: true,
 			expectedParams: &ImageParams{
-				ImageId:      "NG4uQBa2f",
+				ImageID:      "NG4uQBa2f",
 				Fit:          "contain",
 				Width:        0,
 				Height:       0,
@@ -157,7 +157,7 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:         9,
-			imageId:        "NG4uQBa2f",
+			imageID:        "NG4uQBa2f",
 			options:        "w=ff,h=0",
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
@@ -165,7 +165,7 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:         10,
-			imageId:        "NG4uQBa2f",
+			imageID:        "NG4uQBa2f",
 			options:        "w=300,h=gg",
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
@@ -173,7 +173,7 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:         12,
-			imageId:        "NG4uQBa2f",
+			imageID:        "NG4uQBa2f",
 			options:        "w==",
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
@@ -181,7 +181,7 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:         13,
-			imageId:        "NG4uQBa2f",
+			imageID:        "NG4uQBa2f",
 			options:        "fit=stretch",
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
@@ -189,7 +189,7 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:         15,
-			imageId:        "NG4uQBa2f",
+			imageID:        "NG4uQBa2f",
 			options:        "k=k",
 			webpAccepted:   true,
 			expectedParams: &ImageParams{},
@@ -197,11 +197,11 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:       16,
-			imageId:      "NG4uQBa2f",
+			imageID:      "NG4uQBa2f",
 			options:      "q=95",
 			webpAccepted: true,
 			expectedParams: &ImageParams{
-				ImageId:      "NG4uQBa2f",
+				ImageID:      "NG4uQBa2f",
 				Fit:          "contain",
 				Width:        0,
 				Height:       0,
@@ -212,11 +212,11 @@ func TestGetParamsFromUri(t *testing.T) {
 		},
 		{
 			testId:       17,
-			imageId:      "NG4uQBa2f",
+			imageID:      "NG4uQBa2f",
 			options:      "q=m",
 			webpAccepted: true,
 			expectedParams: &ImageParams{
-				ImageId:      "NG4uQBa2f",
+				ImageID:      "NG4uQBa2f",
 				Fit:          "contain",
 				Width:        0,
 				Height:       0,
@@ -230,8 +230,8 @@ func TestGetParamsFromUri(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("ImageParamsFromUri %d", tc.testId), func(t *testing.T) {
 			is := is.NewRelaxed(t)
-			resultParams, err := CreateImageParams(
-				tc.imageId,
+			resultParams, err := createImageParams(
+				tc.imageID,
 				tc.options,
 				tc.webpAccepted,
 				config,
@@ -462,7 +462,7 @@ func TestGetParamsToBimgOptions(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			opts := tc.imageParams.ToBimgOptions(tc.imageSize)
+			opts := tc.imageParams.toBimgOptions(tc.imageSize)
 			if !bimgOptsAreEqual(tc.options, opts) {
 				t.Fatalf("Expected %s but result is %s",
 					bimgOptsToString(tc.options),

@@ -10,9 +10,9 @@ import (
 	"github.com/matryer/is"
 )
 
-func TestParseConfig(t *testing.T) {
+func TestparseConfig(t *testing.T) {
 	is := is.New(t)
-	config_file := strings.NewReader(`
+	configFile := strings.NewReader(`
 data_directory:
   /tmp/webp-server/
 default_image_quality:
@@ -39,7 +39,7 @@ convert_concurrency:
   3
 `)
 	defer os.RemoveAll("/tmp/webp-server")
-	cfg, err := ParseConfig(config_file)
+	cfg, err := parseConfig(configFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ convert_concurrency:
 		ValidImageSizes:      []string{"200x200", "500x500", "600x600"},
 		ValidImageQualities:  []int{90, 95, 100},
 		MaxUploadedImageSize: 3,
-		HttpCacheTTL:         10,
+		HTTPCacheTTL:         10,
 		Debug:                true,
 		ConvertConcurrency:   3,
 	}
@@ -61,9 +61,9 @@ convert_concurrency:
 		os.Setenv("WEBP_SERVER_TOKEN", "123")
 		defer os.Unsetenv("WEBP_SERVER_TOKEN")
 	}
-	_, err = config_file.Seek(0, 0)
+	_, err = configFile.Seek(0, 0)
 	is.NoErr(err)
-	cfg, err = ParseConfig(config_file)
+	cfg, err = parseConfig(configFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ func TestParseConfigErrors(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			is := is.NewRelaxed(t)
-			_, err := ParseConfig(tc.file)
+			_, err := parseConfig(tc.file)
 			is.True(err != nil)
 			is.Equal(err, tc.err)
 		})

@@ -19,13 +19,14 @@ func init() {
 }
 
 const (
-	FIT_COVER      = "cover"
-	FIT_CONTAIN    = "contain"
-	FIT_SCALE_DOWN = "scale-down"
+	FitCover     = "cover"
+	FitContain   = "contain"
+	FitScaleDown = "scale-down"
 )
 
+//ImageParams is request properties for image conversion
 type ImageParams struct {
-	ImageId      string
+	ImageID      string
 	Width        int
 	Height       int
 	Fit          string
@@ -33,10 +34,10 @@ type ImageParams struct {
 	WebpAccepted bool
 }
 
-func CreateImageParams(imageId, options string, webpAccepted bool, config *Config) (*ImageParams, error) {
+func createImageParams(imageID, options string, webpAccepted bool, config *Config) (*ImageParams, error) {
 	params := &ImageParams{
-		ImageId:      imageId,
-		Fit:          FIT_CONTAIN,
+		ImageID:      imageID,
+		Fit:          FitContain,
 		Quality:      config.DefaultImageQuality,
 		WebpAccepted: webpAccepted,
 	}
@@ -61,7 +62,7 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 			}
 		case "fit":
 			switch val {
-			case FIT_CONTAIN, FIT_COVER, FIT_SCALE_DOWN:
+			case FitContain, FitCover, FitScaleDown:
 				params.Fit = val
 			default:
 				return nil, fmt.Errorf("Supported fits are cover, contain and scale-down")
@@ -78,21 +79,21 @@ func CreateImageParams(imageId, options string, webpAccepted bool, config *Confi
 	return params, nil
 }
 
-func ImageIdToFilePath(dataDir string, imageId string) string {
-	parentDir := fmt.Sprintf("images/%s/%s", imageId[1:2], imageId[3:5])
+func getFilePathFromImageID(dataDir string, imageID string) string {
+	parentDir := fmt.Sprintf("images/%s/%s", imageID[1:2], imageID[3:5])
 	parentDir = filepath.Join(dataDir, parentDir)
-	return fmt.Sprintf("%s/%s", parentDir, imageId)
+	return fmt.Sprintf("%s/%s", parentDir, imageID)
 }
 
-func (i *ImageParams) GetMd5() string {
+func (params *ImageParams) getMd5() string {
 	key := fmt.Sprintf(
 		"%s:%d:%d:%s:%d:%t",
-		i.ImageId,
-		i.Width,
-		i.Height,
-		i.Fit,
-		i.Quality,
-		i.WebpAccepted,
+		params.ImageID,
+		params.Width,
+		params.Height,
+		params.Fit,
+		params.Quality,
+		params.WebpAccepted,
 	)
 	h := md5.New()
 	_, err := io.WriteString(h, key)
@@ -102,26 +103,26 @@ func (i *ImageParams) GetMd5() string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func (i *ImageParams) GetCachePath(dataDir string) string {
-	md5Sum := i.GetMd5()
-	fileName := fmt.Sprintf("%s-%s", i.ImageId, md5Sum)
+func (params *ImageParams) getCachePath(dataDir string) string {
+	md5Sum := params.getMd5()
+	fileName := fmt.Sprintf("%s-%s", params.ImageID, md5Sum)
 	parentDir := fmt.Sprintf("caches/%s/%s", md5Sum[31:32], md5Sum[29:31])
 	parentDir = filepath.Join(dataDir, parentDir)
 	return fmt.Sprintf("%s/%s", parentDir, fileName)
 }
 
-func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize) *bimg.Options {
+func (params *ImageParams) toBimgOptions(size *bimg.ImageSize) *bimg.Options {
 	options := &bimg.Options{
 		Quality: params.Quality,
 	}
 
-	if params.Fit == FIT_COVER {
+	if params.Fit == FitCover {
 		options.Crop = true
 		options.Embed = true
 		options.Width = params.Width
 		options.Height = params.Height
 	}
-	if params.Fit == FIT_CONTAIN || params.Fit == FIT_SCALE_DOWN {
+	if params.Fit == FitContain || params.Fit == FitScaleDown {
 		if params.Width == 0 || params.Height == 0 {
 			options.Width = params.Width
 			options.Height = params.Height
@@ -136,7 +137,7 @@ func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize) *bimg.Options {
 			}
 		}
 
-		if params.Fit == FIT_SCALE_DOWN {
+		if params.Fit == FitScaleDown {
 			if options.Width > size.Width {
 				options.Width = size.Width
 			}
@@ -154,7 +155,7 @@ func (params *ImageParams) ToBimgOptions(size *bimg.ImageSize) *bimg.Options {
 	return options
 }
 
-func Convert(inputPath, outputPath string, params *ImageParams) error {
+func convert(inputPath, outputPath string, params *ImageParams) error {
 	f, err := os.Open(inputPath)
 	if err != nil {
 		return err
@@ -173,7 +174,7 @@ func Convert(inputPath, outputPath string, params *ImageParams) error {
 		return err
 	}
 
-	options := params.ToBimgOptions(&size)
+	options := params.toBimgOptions(&size)
 	newImage, err := img.Process(*options)
 	if err != nil {
 		return err
