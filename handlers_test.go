@@ -357,7 +357,7 @@ func TestFetchFunc(t *testing.T) {
 			is.Equal(string(fetchResp.Header.ContentType()), tc.expectedCt)
 			body := fetchResp.Body()
 			if status != 200 {
-				is.Equal(tc.expectedError, body)
+				is.Equal(string(tc.expectedError), string(body))
 				errResult := &ErrorResult{}
 				err := json.Unmarshal(body, errResult)
 				is.NoErr(err)
