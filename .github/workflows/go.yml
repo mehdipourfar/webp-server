@@ -19,7 +19,7 @@ jobs:
           go-version: 1.15
 
       - name: Install dependencies
-        run: apt install libvips-dev
+        run: sudo apt-get install libvips-dev
 
       - name: Build
         run: go build -v ./...
