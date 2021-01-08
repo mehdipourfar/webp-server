@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	bimg "gopkg.in/h2non/bimg.v1"
 	"log"
 	"os"
 	"os/signal"
@@ -37,7 +39,20 @@ func runServer(config *Config) {
 	}
 }
 
+func checkVipsVersion() {
+	minVer := []int{8, 9}
+	curVer := []int{bimg.VipsMajorVersion, bimg.VipsMinorVersion}
+	errMsg := fmt.Sprintf("Install libips=>'%d.%d'. Current version is %s",
+		minVer[0], minVer[1], bimg.VipsVersion)
+	if curVer[0] < minVer[0] {
+		log.Fatal(errMsg)
+	} else if curVer[0] == minVer[0] && curVer[1] < minVer[1] {
+		log.Fatal(errMsg)
+	}
+}
+
 func main() {
+	checkVipsVersion()
 	configPath := flag.String("config", "", "Path of config file in yml format")
 	flag.Parse()
 	if *configPath == "" {
