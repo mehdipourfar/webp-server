@@ -101,9 +101,18 @@ docker run -d -v webp_server_volume:/var/lib/webp-server --name webp-server -e T
 ```
 
 ### Download Binary
+`webp-server` is depending on libvips=>8.9. On Ubuntu 20.04 You can install it By the command below:
 
 ``` sh
 sudo apt install libvips
+```
+After installation, you can check your `libvips` version by running this command:
+
+```sh
+vips -v
+```
+
+``` sh
 wget https://github.com/mehdipourfar/webp-server/releases/download/v1.0.0/webp-server_1.0.0_linux_amd64.tar.gz
 ```
 
