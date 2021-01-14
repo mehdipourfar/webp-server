@@ -5,6 +5,8 @@ Simple and minimal image server capable of storing, resizing, converting, and ca
 [![Go Report Card](https://goreportcard.com/badge/github.com/mehdipourfar/webp-server)](https://goreportcard.com/report/github.com/mehdipourfar/webp-server)
 [![Release](https://img.shields.io/github/v/release/mehdipourfar/webp-server?sort=semver)](https://github.com/mehdipourfar/webp-server/releases)
 [![Github Workflow Status](https://github.com/mehdipourfar/webp-server/workflows/test/badge.svg)](https://github.com/mehdipourfar/webp-server/actions?query=workflow%3Atest)
+[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go#images)
+
 <p align="center">
   <img src="https://github.com/mehdipourfar/webp-server/raw/master/docs/flowchart.jpg" alt="Flowchart"/>
 </p>
@@ -111,6 +113,7 @@ After installation, you can check your `libvips` version by running this command
 ```sh
 vips -v
 ```
+Download the binary from here:
 
 ``` sh
 wget https://github.com/mehdipourfar/webp-server/releases/download/v1.0.0/webp-server_1.0.0_linux_amd64.tar.gz
