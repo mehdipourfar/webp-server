@@ -44,7 +44,7 @@ type TaskManager struct {
 func NewTaskManager(workersCount int) *TaskManager {
 	t := &TaskManager{
 		tasks:   make(map[string]*task),
-		request: make(chan *task, 10),
+		request: make(chan *task, workersCount),
 	}
 	t.startWorkers(workersCount)
 	return t

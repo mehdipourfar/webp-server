@@ -33,7 +33,7 @@ func runServer(config *Config) {
 		}
 	}()
 	<-done
-	log.Print("Graceful Shutdown")
+	log.Println("Graceful Shutdown")
 	if err := server.Shutdown(); err != nil {
 		log.Fatal(err)
 	}
