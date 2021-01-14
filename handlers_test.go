@@ -9,6 +9,7 @@ import (
 	"github.com/valyala/fasthttp/fasthttputil"
 	bimg "gopkg.in/h2non/bimg.v1"
 	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net"
 	"os"
@@ -607,6 +608,21 @@ func TestConcurentConversionRequests(t *testing.T) {
 	}
 	wg.Wait()
 	is.Equal(functionCalls, int64(1))
+
+	// test task 500 response on convert panic
+
+	log.SetOutput(ioutil.Discard)
+	convertFunction = func(inputPath, outputPath string, params *ImageParams) error {
+		panic("Bizzare error")
+	}
+
+	reqURI = fmt.Sprintf("http://test/image/w=100,h=100,fit=cover/%s", uploadResult.ImageID)
+	fetchReq := createRequest(reqURI, "GET", nil, nil)
+	resp := serve(server, fetchReq)
+	is.Equal(resp.StatusCode(), 500)
+	is.Equal(resp.Body(), ErrorServerError)
+	convertFunction = convert
+	log.SetOutput(os.Stdout)
 }
 
 func TestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
