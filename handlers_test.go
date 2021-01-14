@@ -18,11 +18,11 @@ import (
 )
 
 var (
-	TOKEN          = []byte("123")
-	TEST_FILE_PNG  = "./testdata/test.png"
-	TEST_FILE_JPEG = "./testdata/test.jpg"
-	TEST_FILE_WEBP = "./testdata/test.webp"
-	TEST_FILE_PDF  = "./testdata/test.pdf"
+	defaultToken = []byte("123")
+	testFilePNG  = "./testdata/test.png"
+	testFileJPEG = "./testdata/test.jpg"
+	testFileWEBP = "./testdata/test.webp"
+	testFilePDF  = "./testdata/test.pdf"
 )
 
 type UploadResult struct {
@@ -118,7 +118,7 @@ func getTestConfig() *Config {
 		panic(err)
 	}
 	cfg.DataDir = dir
-	cfg.Token = string(TOKEN)
+	cfg.Token = string(defaultToken)
 	cfg.DefaultImageQuality = 90
 	cfg.ValidImageSizes = []string{"500x200", "500x500", "100x100"}
 	cfg.ValidImageQualities = []int{80, 90, 95, 100}
@@ -155,7 +155,7 @@ func TestUploadFunc(t *testing.T) {
 		{
 			name:           "Incorrect Method",
 			method:         "GET",
-			imagePath:      TEST_FILE_JPEG,
+			imagePath:      testFileJPEG,
 			imageParamName: "image_file",
 			token:          nil,
 			expectedStatus: 405,
@@ -164,7 +164,7 @@ func TestUploadFunc(t *testing.T) {
 		{
 			name:           "Missing Token",
 			method:         "POST",
-			imagePath:      TEST_FILE_JPEG,
+			imagePath:      testFileJPEG,
 			imageParamName: "image_file",
 			token:          nil,
 			expectedStatus: 401,
@@ -173,45 +173,45 @@ func TestUploadFunc(t *testing.T) {
 		{
 			name:           "Invalid Param Name",
 			method:         "POST",
-			imagePath:      TEST_FILE_JPEG,
+			imagePath:      testFileJPEG,
 			imageParamName: "image_fileee",
-			token:          TOKEN,
+			token:          defaultToken,
 			expectedStatus: 400,
 			expectedError:  ErrorImageNotProvided,
 		},
 		{
 			name:           "Successful Jpeg Upload",
 			method:         "POST",
-			imagePath:      TEST_FILE_JPEG,
+			imagePath:      testFileJPEG,
 			imageParamName: "image_file",
-			token:          TOKEN,
+			token:          defaultToken,
 			expectedStatus: 200,
 			expectedError:  nil,
 		},
 		{
 			name:           "Successful PNG Upload",
 			method:         "POST",
-			imagePath:      TEST_FILE_PNG,
+			imagePath:      testFilePNG,
 			imageParamName: "image_file",
-			token:          TOKEN,
+			token:          defaultToken,
 			expectedStatus: 200,
 			expectedError:  nil,
 		},
 		{
 			name:           "Successful WEBP Upload",
 			method:         "POST",
-			imagePath:      TEST_FILE_WEBP,
+			imagePath:      testFileWEBP,
 			imageParamName: "image_file",
-			token:          TOKEN,
+			token:          defaultToken,
 			expectedStatus: 200,
 			expectedError:  nil,
 		},
 		{
 			name:           "Failed pdf Upload",
 			method:         "POST",
-			imagePath:      TEST_FILE_PDF,
+			imagePath:      testFilePDF,
 			imageParamName: "image_file",
-			token:          TOKEN,
+			token:          defaultToken,
 			expectedStatus: 400,
 			expectedError:  ErrorFileIsNotImage,
 		},
@@ -258,7 +258,7 @@ func TestFetchFunc(t *testing.T) {
 	}{
 		{
 			name:           "test png with webp accepted false",
-			uploadFilePath: TEST_FILE_PNG,
+			uploadFilePath: testFilePNG,
 			fetchOpts:      "w=500,h=500,fit=cover",
 			webpAccepted:   false,
 			expectedStatus: 200,
@@ -269,7 +269,7 @@ func TestFetchFunc(t *testing.T) {
 		},
 		{
 			name:           "test png with webp accepted true",
-			uploadFilePath: TEST_FILE_PNG,
+			uploadFilePath: testFilePNG,
 			fetchOpts:      "w=500,h=500,fit=cover",
 			webpAccepted:   true,
 			expectedStatus: 200,
@@ -280,7 +280,7 @@ func TestFetchFunc(t *testing.T) {
 		},
 		{
 			name:           "test webp with webp accepted false",
-			uploadFilePath: TEST_FILE_WEBP,
+			uploadFilePath: testFileWEBP,
 			fetchOpts:      "w=500,h=500,fit=cover",
 			webpAccepted:   false,
 			expectedStatus: 200,
@@ -291,7 +291,7 @@ func TestFetchFunc(t *testing.T) {
 		},
 		{
 			name:           "test string as width",
-			uploadFilePath: TEST_FILE_JPEG,
+			uploadFilePath: testFileJPEG,
 			fetchOpts:      "w=hi,h=500,fit=cover",
 			webpAccepted:   false,
 			expectedStatus: 400,
@@ -302,7 +302,7 @@ func TestFetchFunc(t *testing.T) {
 		},
 		{
 			name:           "test inacceptable dimensions",
-			uploadFilePath: TEST_FILE_JPEG,
+			uploadFilePath: testFileJPEG,
 			fetchOpts:      "w=300,h=200,fit=cover",
 			webpAccepted:   false,
 			expectedStatus: 400,
@@ -313,7 +313,7 @@ func TestFetchFunc(t *testing.T) {
 		},
 		{
 			name:           "test inacceptable quality",
-			uploadFilePath: TEST_FILE_JPEG,
+			uploadFilePath: testFileJPEG,
 			fetchOpts:      "w=500,h=500,q=60",
 			webpAccepted:   false,
 			expectedStatus: 400,
@@ -324,7 +324,7 @@ func TestFetchFunc(t *testing.T) {
 		},
 		{
 			name:           "acceptable quality",
-			uploadFilePath: TEST_FILE_JPEG,
+			uploadFilePath: testFileJPEG,
 			fetchOpts:      "w=500,h=500,q=80",
 			webpAccepted:   false,
 			expectedStatus: 200,
@@ -338,7 +338,7 @@ func TestFetchFunc(t *testing.T) {
 		t.Run(fmt.Sprintf("Test upload errors %s", tc.name), func(t *testing.T) {
 			is := is.NewRelaxed(t)
 			uploadReq := createUploadRequest(
-				"POST", TOKEN,
+				"POST", defaultToken,
 				"image_file", tc.uploadFilePath,
 			)
 			uploadResp := serve(server, uploadReq)
@@ -346,8 +346,8 @@ func TestFetchFunc(t *testing.T) {
 			uploadResult := &UploadResult{}
 			err := json.Unmarshal(uploadResp.Body(), uploadResult)
 			is.Equal(err, nil)
-			fetchUri := fmt.Sprintf("http://test/image/%s/%s", tc.fetchOpts, uploadResult.ImageID)
-			fetchReq := createRequest(fetchUri, "GET", nil, nil)
+			fetchURI := fmt.Sprintf("http://test/image/%s/%s", tc.fetchOpts, uploadResult.ImageID)
+			fetchReq := createRequest(fetchURI, "GET", nil, nil)
 			if tc.webpAccepted {
 				fetchReq.Header.SetBytesKV([]byte("accept"), []byte("webp"))
 			}
@@ -415,8 +415,8 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 	server := createServer(config)
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
-		"POST", TOKEN,
-		"image_file", TEST_FILE_JPEG,
+		"POST", defaultToken,
+		"image_file", testFileJPEG,
 	)
 	uploadResp := serve(server, uploadReq)
 
@@ -424,8 +424,8 @@ func TestCacheFileIsCreatedAfterFetch(t *testing.T) {
 	uploadResult := &UploadResult{}
 	err := json.Unmarshal(uploadResp.Body(), uploadResult)
 	is.NoErr(err)
-	fetchUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageID)
-	fetchReq := createRequest(fetchUri, "GET", nil, nil)
+	fetchURI := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageID)
+	fetchReq := createRequest(fetchURI, "GET", nil, nil)
 	imageParams := &ImageParams{
 		ImageID: uploadResult.ImageID,
 		Width:   500,
@@ -454,8 +454,8 @@ func TestDeleteHandler(t *testing.T) {
 	server := createServer(config)
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
-		"POST", TOKEN,
-		"image_file", TEST_FILE_JPEG,
+		"POST", defaultToken,
+		"image_file", testFileJPEG,
 	)
 	uploadResp := serve(server, uploadReq)
 
@@ -491,7 +491,7 @@ func TestDeleteHandler(t *testing.T) {
 			name:           "Invalid Address",
 			method:         "DELETE",
 			imageID:        "123456789/123",
-			token:          TOKEN,
+			token:          defaultToken,
 			expectedStatus: 404,
 			expectedBody:   ErrorAddressNotFound,
 		},
@@ -499,7 +499,7 @@ func TestDeleteHandler(t *testing.T) {
 			name:           "Invalid Image",
 			method:         "DELETE",
 			imageID:        "123456789",
-			token:          TOKEN,
+			token:          defaultToken,
 			expectedStatus: 404,
 			expectedBody:   ErrorImageNotFound,
 		},
@@ -507,7 +507,7 @@ func TestDeleteHandler(t *testing.T) {
 			name:           "Valid Image",
 			method:         "DELETE",
 			imageID:        uploadResult.ImageID,
-			token:          TOKEN,
+			token:          defaultToken,
 			expectedStatus: 204,
 			expectedBody:   nil,
 		},
@@ -545,8 +545,8 @@ func TestGettingOriginalImage(t *testing.T) {
 
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
-		"POST", TOKEN,
-		"image_file", TEST_FILE_PNG,
+		"POST", defaultToken,
+		"image_file", testFilePNG,
 	)
 	uploadResult := &UploadResult{}
 	uploadResp := serve(server, uploadReq)
@@ -577,8 +577,8 @@ func TestConcurentConversionRequests(t *testing.T) {
 
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
-		"POST", TOKEN,
-		"image_file", TEST_FILE_PNG,
+		"POST", defaultToken,
+		"image_file", testFilePNG,
 	)
 	uploadResult := &UploadResult{}
 	uploadResp := serve(server, uploadReq)
@@ -586,7 +586,7 @@ func TestConcurentConversionRequests(t *testing.T) {
 	is.NoErr(err)
 
 	var wg sync.WaitGroup
-	reqUri := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageID)
+	reqURI := fmt.Sprintf("http://test/image/w=500,h=500,fit=cover/%s", uploadResult.ImageID)
 
 	var functionCalls int64
 
@@ -600,7 +600,7 @@ func TestConcurentConversionRequests(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			fetchReq := createRequest(reqUri, "GET", nil, nil)
+			fetchReq := createRequest(reqURI, "GET", nil, nil)
 			resp := serve(server, fetchReq)
 			is.Equal(resp.StatusCode(), 200)
 		}()
@@ -616,8 +616,8 @@ func TestAllSizesAndQualitiesAreAvailableWhenDebugging(t *testing.T) {
 
 	defer os.RemoveAll(config.DataDir)
 	uploadReq := createUploadRequest(
-		"POST", TOKEN,
-		"image_file", TEST_FILE_PNG,
+		"POST", defaultToken,
+		"image_file", testFilePNG,
 	)
 	uploadResult := &UploadResult{}
 	uploadResp := serve(server, uploadReq)

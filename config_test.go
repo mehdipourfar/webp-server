@@ -10,7 +10,7 @@ import (
 	"github.com/matryer/is"
 )
 
-func TestparseConfig(t *testing.T) {
+func TestParseConfig(t *testing.T) {
 	is := is.New(t)
 	configFile := strings.NewReader(`
 data_directory:

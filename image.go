@@ -19,8 +19,11 @@ func init() {
 }
 
 const (
-	FitCover     = "cover"
-	FitContain   = "contain"
+	//FitCover is used for resize and crop
+	FitCover = "cover"
+	//FitContain is used for resize and keep aspect ratio
+	FitContain = "contain"
+	//FitScaleDown is like FitContain except that it prevent image to be enlarged
 	FitScaleDown = "scale-down"
 )
 

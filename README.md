@@ -138,7 +138,7 @@ There is an example configuration file [example-config.yml](https://github.com/m
 
 * `data_dir`: Data directory in which images and cached images are stored. Note that in this directory, there will be two separate directories named `images` and `caches`. You can remove the caches directory at any point in time if you wanted to free up some disk space.
 
-* `server_address`: Combination of ip:port. Default value is 127.0.0.1:8080. You can also set unix socket path for server address (unix:/path/to/socket.sock)
+* `server_address`: Combination of ip:port. Default value is 127.0.0.1:8080.
 
 * `token`: The token that your backend application should send in the request header for upload and delete operations.
 

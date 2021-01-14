@@ -58,7 +58,7 @@ func TestGetParamsFromUri(t *testing.T) {
 	}
 
 	tt := []struct {
-		testId         int
+		testID         int
 		imageID        string
 		options        string
 		webpAccepted   bool
@@ -66,7 +66,7 @@ func TestGetParamsFromUri(t *testing.T) {
 		err            error
 	}{
 		{
-			testId:       1,
+			testID:       1,
 			imageID:      "NG4uQBa2f",
 			options:      "w=500,h=500,fit=contain",
 			webpAccepted: false,
@@ -81,7 +81,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId:       2,
+			testID:       2,
 			imageID:      "NG4uQBa2f",
 			options:      "w=300,h=300,fit=contain",
 			webpAccepted: false,
@@ -96,7 +96,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId:       3,
+			testID:       3,
 			imageID:      "NG4uQBa2f",
 			options:      "w=300,h=300,fit=contain",
 			webpAccepted: true,
@@ -111,7 +111,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId:       4,
+			testID:       4,
 			imageID:      "NG4uQBa2f",
 			options:      "w=300,h=300,fit=cover",
 			webpAccepted: true,
@@ -126,7 +126,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId:       7,
+			testID:       7,
 			imageID:      "NG4uQBa2f",
 			options:      "w=300,h=300,fit=scale-down",
 			webpAccepted: true,
@@ -141,7 +141,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId:       8,
+			testID:       8,
 			imageID:      "NG4uQBa2f",
 			options:      "w=0,h=0",
 			webpAccepted: true,
@@ -156,7 +156,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId:         9,
+			testID:         9,
 			imageID:        "NG4uQBa2f",
 			options:        "w=ff,h=0",
 			webpAccepted:   true,
@@ -164,7 +164,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err:            fmt.Errorf("Width should be integer"),
 		},
 		{
-			testId:         10,
+			testID:         10,
 			imageID:        "NG4uQBa2f",
 			options:        "w=300,h=gg",
 			webpAccepted:   true,
@@ -172,7 +172,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err:            fmt.Errorf("Height should be integer"),
 		},
 		{
-			testId:         12,
+			testID:         12,
 			imageID:        "NG4uQBa2f",
 			options:        "w==",
 			webpAccepted:   true,
@@ -180,7 +180,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err:            fmt.Errorf("Invalid param: w=="),
 		},
 		{
-			testId:         13,
+			testID:         13,
 			imageID:        "NG4uQBa2f",
 			options:        "fit=stretch",
 			webpAccepted:   true,
@@ -188,7 +188,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err:            fmt.Errorf("Supported fits are cover, contain and scale-down"),
 		},
 		{
-			testId:         15,
+			testID:         15,
 			imageID:        "NG4uQBa2f",
 			options:        "k=k",
 			webpAccepted:   true,
@@ -196,7 +196,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err:            fmt.Errorf("Invalid filter key: k"),
 		},
 		{
-			testId:       16,
+			testID:       16,
 			imageID:      "NG4uQBa2f",
 			options:      "q=95",
 			webpAccepted: true,
@@ -211,7 +211,7 @@ func TestGetParamsFromUri(t *testing.T) {
 			err: nil,
 		},
 		{
-			testId:       17,
+			testID:       17,
 			imageID:      "NG4uQBa2f",
 			options:      "q=m",
 			webpAccepted: true,
@@ -228,7 +228,7 @@ func TestGetParamsFromUri(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		t.Run(fmt.Sprintf("ImageParamsFromUri %d", tc.testId), func(t *testing.T) {
+		t.Run(fmt.Sprintf("ImageParamsFromUri %d", tc.testID), func(t *testing.T) {
 			is := is.NewRelaxed(t)
 			resultParams, err := createImageParams(
 				tc.imageID,
