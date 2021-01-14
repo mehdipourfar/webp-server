@@ -1,11 +1,12 @@
 # webp-server
-Simple and minimal image server capable of storing, resizing, converting, and caching images. You can quickly find out how it works by looking at the flowchart below.
 
 [![Coverage Status](https://coveralls.io/repos/github/mehdipourfar/webp-server/badge.svg?branch=master)](https://coveralls.io/github/mehdipourfar/webp-server?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mehdipourfar/webp-server)](https://goreportcard.com/report/github.com/mehdipourfar/webp-server)
 [![Release](https://img.shields.io/github/v/release/mehdipourfar/webp-server?sort=semver)](https://github.com/mehdipourfar/webp-server/releases)
 [![Github Workflow Status](https://github.com/mehdipourfar/webp-server/workflows/test/badge.svg)](https://github.com/mehdipourfar/webp-server/actions?query=workflow%3Atest)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go#images)
+
+Simple and minimal image server capable of storing, resizing, converting, and caching images. You can quickly find out how it works by looking at the flowchart below.
 
 <p align="center">
   <img src="https://github.com/mehdipourfar/webp-server/raw/master/docs/flowchart.jpg" alt="Flowchart"/>
